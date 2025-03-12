@@ -613,3 +613,13 @@ if __name__ == "__main__":
     Gtk.main()
 
 
+# Hey there!
+# 
+# First of all, thank you for checking out this project. I truly hope
+# that Better Control is useful to you and that it helps you in your
+# work or personal projects. If you have any suggestions,
+# issues, or want to collaborate, don't hesitate to reach out.
+#
+# Stay awesome! - reach out to me on
+# "quantumvoid._" <-- discord
+# "quantumvoid_" <-- reddit
