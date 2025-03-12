@@ -1,4 +1,4 @@
-PREFIX ?= /usr/local
+PREFIX ?= /usr/bin
 BIN_DIR := $(PREFIX)/bin
 DESKTOP_DIR := /usr/share/applications
 CONFIG_DIR := $(HOME)/.config
