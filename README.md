@@ -3,7 +3,7 @@ A gtk themed control panel for linux 🐧
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
-# How to Install? ✅ :)
+# How to Install? ✅ 
 before install make sure u have `git` and `base-devel` installed
 ```
 git clone https://github.com/quantumvoid0/better-control
@@ -11,7 +11,7 @@ cd better-control
 sudo make install
 
 ```
-# How to uninstall? ❌ :(
+# How to uninstall? ❌ 
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
