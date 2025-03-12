@@ -1,6 +1,6 @@
 # Copyright (C) 2025 quantumvoid0 (https://github.com/quantumvoid0)
 # This program is licensed under the terms of the GNU General Public License v3.
-# See LICENSE.md for the full license text. (https://github.com/quantumvoid0/better-control/LICENSE)
+# See LICENSE.md for the full license text (https://github.com/quantumvoid0/better-control/LICENSE).
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
