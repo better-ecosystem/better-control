@@ -15,7 +15,7 @@ before install make sure u have `git` and `base-devel` installed
 - BlueZ & BlueZ Utils (for Bluetooth support)
 - PipeWire Pulse (for audio control)
 - Brightnessctl (for screen brightness control)
-- Python Libraries: python-gobject and python-pydbus
+- Python Libraries: python-gobject and python-pydbus and python3
 
 ### Arch Based
 Arch users dont need to do all this installation processes, 
@@ -29,16 +29,16 @@ If you use `paru`then:
 ```paru -S better-control-git```
 
 ### Debian Based
-```sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus```
+```sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python```
 
 ### Fedora Based
-```sudo dnf install -y gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus```
+```sudo dnf install -y gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python```
 
 ### Void Linux
-```sudo xbps-install -S gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus```
+```sudo xbps-install -S gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python```
 
 ### Alpine Linux
-```sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus```
+```sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python```
 
 
 ## After you get the dependencies 
