@@ -40,23 +40,6 @@ If you use `paru`then:
 ### Alpine Linux
 ```sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus```
 
-### NixOS
-open `/etc/nixos/configuration.nix`
-add dependencies inside `environment.systemPackages`
-
-```
-environment.systemPackages = with pkgs; [
-  gtk4
-  networkmanager
-  bluez
-  bluez-utils
-  pipewire
-  brightnessctl
-  python3Packages.pygobject
-  python3Packages.dbus-python
-];
-```
-`sudo nixos-rebuild switch`
 
 ## After you get the dependencies 
 ```
