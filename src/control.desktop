@@ -7,7 +7,7 @@ GenericName=Control Center
 Comment=Fast & feature-rich
 TryExec=control
 StartupNotify=true
-Exec=control
+Exec=python /usr/local/bin/control
 Icon=settings
 Categories=System;Control;Settings;
 # A project by quantumvoid._ <--- discord id

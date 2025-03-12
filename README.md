@@ -7,6 +7,50 @@ This project is still under development , contriubutions such as ideas and featu
 
 # How to Install? ✅ 
 before install make sure u have `git` and `base-devel` installed
+
+## Dependencies
+
+- GTK 4 (for the UI)
+- NetworkManager (for managing Wi-Fi & Ethernet)
+- BlueZ & BlueZ Utils (for Bluetooth support)
+- PipeWire Pulse (for audio control)
+- Brightnessctl (for screen brightness control)
+- Python Libraries: python-gobject and python-pydbus
+
+### Arch Based
+`sudo pacman -S --needed gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl python-gobject python-pydbus`
+
+### Debian Based
+`sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus`
+
+### Fedora Based
+`sudo dnf install -y gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus`
+
+### Void Linux
+`sudo xbps-install -S gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus`
+
+### Alpine Linux
+`sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus`
+
+### NixOS
+open `/etc/nixos/configuration.nix`
+add dependencies inside `environment.systemPackages`
+
+```
+environment.systemPackages = with pkgs; [
+  gtk4
+  networkmanager
+  bluez
+  bluez-utils
+  pipewire
+  brightnessctl
+  python3Packages.pygobject
+  python3Packages.dbus-python
+];
+```
+`sudo nixos-rebuild switch`
+
+### After you get the dependencies 
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
@@ -27,18 +71,10 @@ Probably will work on the stuff below
 | **Category**         | **Requirements**                                                                 |
 |-----------------------|----------------------------------------------------------------------------------|
 | **Operating System**  | Linux                                                                            |
-| **Distributions**     | Arch based,Fedora Based,Debian Based                                                               |
+| **Distributions**     | Arch based,Fedora Based,Debian Based,NixOS                                                              |
 | **Desktop Environments** (might work) | GNOME, XFCE, KDE Plasma (with GTK support), LXDE/LXQT, etc.                  |
 | **Window Managers**   | Hyprland (def works), Sway, i3, Openbox, Fluxbox, etc.                             |
 | **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
-
-# Requirements 💻
-All these are installed during the installation process so dont worry abt it (except the hardware)
-
-| **Category**             | **Requirements**                                                                 |
-|--------------------------|----------------------------------------------------------------------------------|
-| **Packages**             | `networkmanager` `bluez` `bluez-utils` `brightnessctl` `gtk4` `pipewire-pulse` `python-gobject` `python-pydbus`     |
-| **Hardware**             | Wi-Fi adapter, Bluetooth adapter, audio hardware, backlight control device       |
 
 # For WM users ✨
 make it so that `control` runs as a floating window to make it look cool if u want
