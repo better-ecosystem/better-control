@@ -18,7 +18,13 @@ before install make sure u have `git` and `base-devel` installed
 - Python Libraries: python-gobject and python-pydbus
 
 ### Arch Based
-```sudo pacman -S --needed gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl python-gobject python-pydbus```
+Arch users dont need to do all this installation processes, 
+
+If you use `yay`
+```yay -S better-control-git```
+
+If you use `paru`
+```paru -S better-control-git```
 
 ### Debian Based
 ```sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus```
