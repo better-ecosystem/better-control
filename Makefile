@@ -14,7 +14,4 @@ uninstall:
 	rm -f $(DESKTOP_DIR)/control.desktop
 	@echo "Better Control uninstalled successfully!"
 
-build:
-	@echo "No compilation needed for Python script."
-
 .PHONY: install uninstall build
