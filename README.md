@@ -53,6 +53,8 @@ sudo rm -rf ~/better-control
 
 For arch users who installed through AUR do this to uninstall `sudo pacman -Rns better-control-git`
 
+For others who installed with makefile follow the lines below :
+
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
