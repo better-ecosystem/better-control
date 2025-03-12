@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=2.2
+Type=Application
+Name=control
+GenericName=Control Center
+Comment=Fast & feature-rich
+TryExec=control
+StartupNotify=true
+Exec=control
+Icon=settings
+Categories=System;Control;Settings;
+# A project by quantumvoid._ <--- discord id
