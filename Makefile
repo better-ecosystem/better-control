@@ -1,7 +1,6 @@
-PREFIX ?= /usr/bin
+PREFIX ?= /usr
 BIN_DIR := $(PREFIX)/bin
-DESKTOP_DIR := /usr/share/applications
-CONFIG_DIR := $(HOME)/.config
+DESKTOP_DIR := $(PREFIX)/share/applications
 APP_NAME := control
 SRC := src/control.py
 
@@ -19,4 +18,3 @@ build:
 	@echo "No compilation needed for Python script."
 
 .PHONY: install uninstall build
-
