@@ -18,19 +18,19 @@ before install make sure u have `git` and `base-devel` installed
 - Python Libraries: python-gobject and python-pydbus
 
 ### Arch Based
-`sudo pacman -S --needed gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl python-gobject python-pydbus`
+```sudo pacman -S --needed gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl python-gobject python-pydbus```
 
 ### Debian Based
-`sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus`
+```sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus```
 
 ### Fedora Based
-`sudo dnf install -y gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus`
+```sudo dnf install -y gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus```
 
 ### Void Linux
-`sudo xbps-install -S gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus`
+```sudo xbps-install -S gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus```
 
 ### Alpine Linux
-`sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus`
+```sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus```
 
 ### NixOS
 open `/etc/nixos/configuration.nix`
@@ -65,15 +65,15 @@ sudo make uninstall
 
 ```
 # Compatability 📄
-I have only tested this on Arch Linux with Hyprland so testers are welcome to test it out and share their review in discussions/issues. This should work on all arch based, fedora based and debian based distros (if u tested it pls leave a comment for any issues)
+I have only tested this on Arch Linux with Hyprland so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
 
 Probably will work on the stuff below 
 | **Category**         | **Requirements**                                                                 |
 |-----------------------|----------------------------------------------------------------------------------|
 | **Operating System**  | Linux                                                                            |
-| **Distributions**     | Arch based,Fedora Based,Debian Based,NixOS                                                              |
+| **Distributions**     | Arch based,Fedora Based,Debian Based,NixOS,Void,Alpine                                                            |
 | **Desktop Environments** (might work) | GNOME, XFCE, KDE Plasma (with GTK support), LXDE/LXQT, etc.                  |
-| **Window Managers**   | Hyprland (def works), Sway, i3, Openbox, Fluxbox, etc.                             |
+| **Window Managers**   | Hyprland (tested), Sway, i3, Openbox, Fluxbox, etc.                             |
 | **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
 
 # For WM users ✨
