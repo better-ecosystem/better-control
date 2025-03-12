@@ -49,7 +49,10 @@ sudo make install
 sudo rm -rf ~/better-control
 
 ```
-# How to uninstall? ❌ 
+# How to uninstall? ❌
+
+For arch users who installed through AUR do this to uninstall `sudo pacman -Rns better-control-git`
+
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
@@ -57,6 +60,7 @@ sudo make uninstall
 sudo rm -rf ~/better-control
 
 ```
+
 # Compatability 📄
 I have only tested this on Arch Linux with Hyprland so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
 
