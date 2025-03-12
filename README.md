@@ -27,7 +27,7 @@ Probably will work on the stuff below
 | **Operating System**  | Linux                                                                            |
 | **Distributions**     | Arch based,Fedora Based,Debian Based                                                               |
 | **Desktop Environments** (might work) | GNOME, XFCE, KDE Plasma (with GTK support), LXDE/LXQT, etc.                  |
-| **Window Managers** (might work)   | Hyprland (def works), Sway, i3, Openbox, Fluxbox, etc.                             |
+| **Window Managers**   | Hyprland (def works), Sway, i3, Openbox, Fluxbox, etc.                             |
 | **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
 
 # Requirements
