@@ -609,6 +609,7 @@ class HyprlandSettingsApp(Gtk.Window):
 if __name__ == "__main__":
     win = HyprlandSettingsApp()
     win.connect("destroy", Gtk.main_quit)
+    GLib.idle_add(lambda: win.refresh_wifi(None))  # Refresh WiFi list asynchronously when window is shown
     win.show_all()
     Gtk.main()
 
