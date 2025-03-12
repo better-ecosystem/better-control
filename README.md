@@ -20,10 +20,12 @@ before install make sure u have `git` and `base-devel` installed
 ### Arch Based
 Arch users dont need to do all this installation processes, 
 
-If you use `yay`
+If you use `yay` then:
+
 ```yay -S better-control-git```
 
-If you use `paru`
+If you use `paru`then:
+
 ```paru -S better-control-git```
 
 ### Debian Based
