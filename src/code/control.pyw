@@ -1,3 +1,12 @@
+# Copyright (C) 2025 [quantumvoid0](https://github.com/quantumvoid0)
+# This program is licensed under the terms of the GNU General Public License v3.
+# See LICENSE.md for the full license text.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
 import gi
 import os
 import shutil
@@ -603,5 +612,4 @@ if __name__ == "__main__":
     win.show_all()
     Gtk.main()
 
-# Copyright (C) 2025 quantumvoid0
-# Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0)
+
