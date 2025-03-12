@@ -48,6 +48,10 @@ class HyprlandSettingsApp(Gtk.Window):
                 callback=self.on_bluez_properties_changed
             )
             print("Bluetooth monitoring initialized")
+            
+            # Add a debounce timer for Bluetooth refresh
+            self.bt_refresh_timer = None
+            
         except Exception as e:
             print(f"Failed to initialize Bluetooth monitoring: {e}")
 
@@ -324,6 +328,7 @@ class HyprlandSettingsApp(Gtk.Window):
         """
         Handler for BlueZ property changes.
         Refreshes the Bluetooth devices list when relevant properties change.
+        Uses a debounce mechanism to prevent multiple refreshes in quick succession.
         """
         interface_name, changed_properties, invalidated_properties = params
         print(f"Bluetooth properties changed on {obj}: {changed_properties}")
@@ -333,8 +338,20 @@ class HyprlandSettingsApp(Gtk.Window):
         for prop in relevant_properties:
             if prop in changed_properties or prop in invalidated_properties:
                 print(f"Refreshing Bluetooth devices due to {prop} change")
-                GLib.idle_add(lambda: self.refresh_bluetooth(None))
+                
+                # Cancel any pending refresh
+                if self.bt_refresh_timer:
+                    GLib.source_remove(self.bt_refresh_timer)
+                
+                # Schedule a new refresh after a short delay (300ms)
+                self.bt_refresh_timer = GLib.timeout_add(300, self._delayed_refresh_bluetooth)
                 break
+    
+    def _delayed_refresh_bluetooth(self):
+        """Helper method for debounced Bluetooth refresh"""
+        self.refresh_bluetooth(None)
+        self.bt_refresh_timer = None
+        return False  # Don't repeat the timeout
 
     def enable_bluetooth(self, button):
         if not shutil.which("bluetoothctl"):
@@ -385,26 +402,40 @@ class HyprlandSettingsApp(Gtk.Window):
                 GLib.idle_add(lambda: self.show_error("No Bluetooth devices found nearby."))
                 GLib.idle_add(self.bt_spinner.stop)
                 return
+            
+            # Track devices by name to prevent duplicates
+            device_dict = {}
 
             for device in devices:
                 parts = device.split(" ")
                 if len(parts) < 2:
                     continue
+                    
                 mac_address = parts[1]
                 device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
+                
+                # If we already have a device with this name, skip it
+                # If the device name is just a MAC address, use the MAC address as the key
+                device_key = device_name
+                
+                # Only keep the first device with a given name
+                if device_key not in device_dict:
+                    device_dict[device_key] = mac_address
 
-                def add_device():
+            # Now add all unique devices to the listbox
+            for device_name, mac_address in device_dict.items():
+                def add_device(name=device_name, mac=mac_address):
                     row = Gtk.ListBoxRow()
                     box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
 
-                    label = Gtk.Label(label=device_name, xalign=0)
+                    label = Gtk.Label(label=name, xalign=0)
                     connect_button = Gtk.Button(label="Connect")
                     disconnect_button = Gtk.Button(label="Disconnect")
                     forget_button = Gtk.Button(label="Forget")
 
-                    connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
-                    disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
-                    forget_button.connect("clicked", self.forget_bluetooth_device, mac_address)
+                    connect_button.connect("clicked", self.connect_bluetooth_device, mac)
+                    disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac)
+                    forget_button.connect("clicked", self.forget_bluetooth_device, mac)
 
                     box.pack_start(label, True, True, 0)
                     box.pack_start(connect_button, False, False, 0)
