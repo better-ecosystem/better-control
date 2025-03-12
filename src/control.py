@@ -22,6 +22,19 @@ class HyprlandSettingsApp(Gtk.Window):
         Gtk.Window.__init__(self, title="Control Center")
         self.set_default_size(900, 700)
 
+        # Set up NetworkManager D-Bus connection for WiFi monitoring
+        self.system_bus = SystemBus()
+        self.nm_proxy = self.system_bus.get('.NetworkManager', '/org/freedesktop/NetworkManager')
+        
+        # Connect to the PropertiesChanged signal to monitor connection changes
+        self.nm_proxy.PropertiesChanged.connect(self.on_nm_properties_changed)
+        
+        # Also monitor device state changes
+        for device_path in self.nm_proxy.GetAllDevices():
+            device = self.system_bus.get('.NetworkManager', device_path)
+            if device.DeviceType == 2:  # WiFi device
+                device.StateChanged.connect(self.on_wifi_state_changed)
+
         notebook = Gtk.Notebook()
         self.add(notebook)
 
@@ -273,6 +286,23 @@ class HyprlandSettingsApp(Gtk.Window):
         notebook.append_page(brightness_box, Gtk.Label(label="Brightness"))
 
         self.update_button_labels()
+
+    def on_nm_properties_changed(self, interface_name, changed_properties, invalidated_properties):
+        """
+        Handler for NetworkManager property changes.
+        Refreshes the WiFi list when relevant properties change.
+        """
+        print(f"NetworkManager properties changed: {changed_properties}")
+        if 'ActiveConnections' in changed_properties:
+            GLib.idle_add(lambda: self.refresh_wifi(None))
+
+    def on_wifi_state_changed(self, new_state, old_state, reason):
+        """
+        Handler for WiFi device state changes.
+        Refreshes the WiFi list when the state changes.
+        """
+        print(f"WiFi state changed from {old_state} to {new_state} (reason: {reason})")
+        GLib.idle_add(lambda: self.refresh_wifi(None))
 
     def enable_bluetooth(self, button):
         if not shutil.which("bluetoothctl"):
