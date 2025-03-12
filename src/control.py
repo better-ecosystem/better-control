@@ -34,6 +34,22 @@ class HyprlandSettingsApp(Gtk.Window):
             device = self.system_bus.get('.NetworkManager', device_path)
             if device.DeviceType == 2:  # WiFi device
                 device.StateChanged.connect(self.on_wifi_state_changed)
+        
+        # Set up Bluetooth D-Bus connection for monitoring
+        try:
+            self.bt_proxy = self.system_bus.get('org.bluez', '/')
+            # Monitor Bluetooth adapter and device changes
+            self.system_bus.subscribe(
+                sender='org.bluez',
+                iface='org.freedesktop.DBus.Properties',
+                signal='PropertiesChanged',
+                object=None,
+                arg0=None,
+                callback=self.on_bluez_properties_changed
+            )
+            print("Bluetooth monitoring initialized")
+        except Exception as e:
+            print(f"Failed to initialize Bluetooth monitoring: {e}")
 
         notebook = Gtk.Notebook()
         self.add(notebook)
@@ -304,6 +320,22 @@ class HyprlandSettingsApp(Gtk.Window):
         print(f"WiFi state changed from {old_state} to {new_state} (reason: {reason})")
         GLib.idle_add(lambda: self.refresh_wifi(None))
 
+    def on_bluez_properties_changed(self, sender, obj, iface, signal, params):
+        """
+        Handler for BlueZ property changes.
+        Refreshes the Bluetooth devices list when relevant properties change.
+        """
+        interface_name, changed_properties, invalidated_properties = params
+        print(f"Bluetooth properties changed on {obj}: {changed_properties}")
+        
+        # Refresh Bluetooth devices list when relevant properties change
+        relevant_properties = ['Powered', 'Discovering', 'Connected', 'Paired', 'Trusted']
+        for prop in relevant_properties:
+            if prop in changed_properties or prop in invalidated_properties:
+                print(f"Refreshing Bluetooth devices due to {prop} change")
+                GLib.idle_add(lambda: self.refresh_bluetooth(None))
+                break
+
     def enable_bluetooth(self, button):
         if not shutil.which("bluetoothctl"):
             self.show_error("BlueZ is not installed. Install it with:\n\nsudo pacman -S bluez bluez-utils")
@@ -368,13 +400,16 @@ class HyprlandSettingsApp(Gtk.Window):
                     label = Gtk.Label(label=device_name, xalign=0)
                     connect_button = Gtk.Button(label="Connect")
                     disconnect_button = Gtk.Button(label="Disconnect")
+                    forget_button = Gtk.Button(label="Forget")
 
                     connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
                     disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
+                    forget_button.connect("clicked", self.forget_bluetooth_device, mac_address)
 
                     box.pack_start(label, True, True, 0)
                     box.pack_start(connect_button, False, False, 0)
                     box.pack_start(disconnect_button, False, False, 0)
+                    box.pack_start(forget_button, False, False, 0)
 
                     row.add(box)
                     self.bt_listbox.add(row)
@@ -400,25 +435,98 @@ class HyprlandSettingsApp(Gtk.Window):
 
     def connect_bluetooth_device(self, button, mac_address):
         """ Connects to a selected Bluetooth device """
-        try:
-            subprocess.run(["bluetoothctl", "pair", mac_address], capture_output=True, text=True)
-            subprocess.run(["bluetoothctl", "connect", mac_address], capture_output=True, text=True)
-        except Exception as e:
-            self.show_error(f"Error connecting to {mac_address}: {e}")
+        # Start the spinner to indicate connection in progress
+        self.bt_spinner.start()
+        
+        # Create a connection thread to avoid freezing the UI
+        def connect_thread():
+            try:
+                print(f"Attempting to pair with device {mac_address}...")
+                subprocess.run(["bluetoothctl", "pair", mac_address], capture_output=True, text=True)
+                
+                print(f"Attempting to connect to device {mac_address}...")
+                result = subprocess.run(["bluetoothctl", "connect", mac_address], capture_output=True, text=True)
+                
+                # Check connection result and show appropriate message
+                if "Connection successful" in result.stdout:
+                    GLib.idle_add(lambda: self.show_connection_status(f"Successfully connected to device", True))
+                else:
+                    GLib.idle_add(lambda: self.show_connection_status(f"Connection attempt completed, but may not have been successful", False))
+                
+            except Exception as e:
+                GLib.idle_add(lambda: self.show_error(f"Error connecting to {mac_address}: {e}"))
+            finally:
+                # Stop the spinner when done
+                GLib.idle_add(self.bt_spinner.stop)
+        
+        # Start the connection thread
+        threading.Thread(target=connect_thread, daemon=True).start()
+
+    def show_connection_status(self, message, success=True):
+        """Display a connection status message"""
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            flags=0,
+            message_type=Gtk.MessageType.INFO if success else Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.OK,
+            text=message
+        )
+        dialog.run()
+        dialog.destroy()
 
     def disconnect_bluetooth_device(self, button, mac_address):
         """ Disconnects from a selected Bluetooth device """
-        try:
-            subprocess.run(["bluetoothctl", "disconnect", mac_address], capture_output=True, text=True)
-        except Exception as e:
-            self.show_error(f"Error disconnecting from {mac_address}: {e}")
+        # Start the spinner to indicate disconnection in progress
+        self.bt_spinner.start()
+        
+        # Create a disconnection thread to avoid freezing the UI
+        def disconnect_thread():
+            try:
+                print(f"Attempting to disconnect from device {mac_address}...")
+                result = subprocess.run(["bluetoothctl", "disconnect", mac_address], capture_output=True, text=True)
+                
+                # Check disconnection result and show appropriate message
+                if "Successful disconnected" in result.stdout or "Connection successfully disconnected" in result.stdout:
+                    GLib.idle_add(lambda: self.show_connection_status(f"Successfully disconnected from device", True))
+                else:
+                    GLib.idle_add(lambda: self.show_connection_status(f"Disconnection attempt completed", False))
+                
+            except Exception as e:
+                GLib.idle_add(lambda: self.show_error(f"Error disconnecting from {mac_address}: {e}"))
+            finally:
+                # Stop the spinner when done
+                GLib.idle_add(self.bt_spinner.stop)
+        
+        # Start the disconnection thread
+        threading.Thread(target=disconnect_thread, daemon=True).start()
 
     def forget_bluetooth_device(self, button, mac_address):
         """ Removes a Bluetooth device from known devices """
-        try:
-            subprocess.run(["bluetoothctl", "remove", mac_address], capture_output=True, text=True)
-        except Exception as e:
-            self.show_error(f"Error forgetting {mac_address}: {e}")
+        # Start the spinner to indicate operation in progress
+        self.bt_spinner.start()
+        
+        # Create a thread to avoid freezing the UI
+        def forget_thread():
+            try:
+                print(f"Attempting to forget device {mac_address}...")
+                result = subprocess.run(["bluetoothctl", "remove", mac_address], capture_output=True, text=True)
+                
+                # Check result and show appropriate message
+                if "Device has been removed" in result.stdout or "was removed" in result.stdout:
+                    GLib.idle_add(lambda: self.show_connection_status(f"Device successfully removed", True))
+                else:
+                    GLib.idle_add(lambda: self.show_connection_status(f"Device removal attempt completed", False))
+                
+            except Exception as e:
+                GLib.idle_add(lambda: self.show_error(f"Error forgetting {mac_address}: {e}"))
+            finally:
+                # Stop the spinner when done
+                GLib.idle_add(self.bt_spinner.stop)
+                # Refresh the device list after forgetting a device
+                GLib.idle_add(lambda: self.refresh_bluetooth(None))
+        
+        # Start the thread
+        threading.Thread(target=forget_thread, daemon=True).start()
 
     def mzero(self,button):
         subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "0%"])
