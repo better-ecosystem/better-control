@@ -15,6 +15,7 @@ from pydbus import SystemBus
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gio, GLib, Gdk  
 import subprocess
+import threading
 
 class HyprlandSettingsApp(Gtk.Window):
     def __init__(self):
@@ -80,9 +81,13 @@ class HyprlandSettingsApp(Gtk.Window):
         disable_bt_button.connect("clicked", self.disable_bluetooth)
         bluetooth_button_box.pack_start(disable_bt_button, False, False, 0)
 
-        refresh_bt_button = Gtk.Button(label="Refresh Devices")
-        refresh_bt_button.connect("clicked", self.refresh_bluetooth)
-        bluetooth_button_box.pack_start(refresh_bt_button, False, False, 0)
+        self.refresh_bt_button = Gtk.Button(label="Refresh Devices")
+        self.refresh_bt_button.connect("clicked", self.refresh_bluetooth)
+        bluetooth_button_box.pack_start(self.refresh_bt_button, False, False, 0)
+
+        self.bt_spinner = Gtk.Spinner()
+        self.bt_spinner.set_size_request(24, 24)
+        bluetooth_button_box.pack_start(self.bt_spinner, False, False, 0)
 
         bluetooth_box.pack_start(bluetooth_button_box, False, False, 0)
 
@@ -294,53 +299,62 @@ class HyprlandSettingsApp(Gtk.Window):
     def refresh_bluetooth(self, button):
         """ Refreshes the list of Bluetooth devices (paired + nearby) """
         self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+        self.bt_spinner.start()
+        
+        def scan_devices():
+            bt_status = subprocess.run(
+                ["systemctl", "is-active", "bluetooth"], capture_output=True, text=True
+            ).stdout.strip()
+            if bt_status != "active":
+                GLib.idle_add(lambda: self.show_error("Bluetooth is disabled. Enable it first."))
+                GLib.idle_add(self.bt_spinner.stop)
+                return
 
-        bt_status = subprocess.run(
-            ["systemctl", "is-active", "bluetooth"], capture_output=True, text=True
-        ).stdout.strip()
-        if bt_status != "active":
-            self.show_error("Bluetooth is disabled. Enable it first.")
-            return
+            subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
+            time.sleep(5)  
+            subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
 
-        subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
-        time.sleep(5)  
-        subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
+            output = subprocess.run(
+                ["bluetoothctl", "devices"], capture_output=True, text=True
+            ).stdout.strip()
+            devices = output.split("\n")
 
-        output = subprocess.run(
-            ["bluetoothctl", "devices"], capture_output=True, text=True
-        ).stdout.strip()
-        devices = output.split("\n")
+            if not devices or devices == [""]:
+                GLib.idle_add(lambda: self.show_error("No Bluetooth devices found nearby."))
+                GLib.idle_add(self.bt_spinner.stop)
+                return
 
-        if not devices or devices == [""]:
-            self.show_error("No Bluetooth devices found nearby.")
-            return
+            for device in devices:
+                parts = device.split(" ")
+                if len(parts) < 2:
+                    continue
+                mac_address = parts[1]
+                device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
 
-        for device in devices:
-            parts = device.split(" ")
-            if len(parts) < 2:
-                continue
-            mac_address = parts[1]
-            device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
+                def add_device():
+                    row = Gtk.ListBoxRow()
+                    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
 
-            row = Gtk.ListBoxRow()
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                    label = Gtk.Label(label=device_name, xalign=0)
+                    connect_button = Gtk.Button(label="Connect")
+                    disconnect_button = Gtk.Button(label="Disconnect")
 
-            label = Gtk.Label(label=device_name, xalign=0)
-            connect_button = Gtk.Button(label="Connect")
-            disconnect_button = Gtk.Button(label="Disconnect")
+                    connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
+                    disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
 
-            connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
-            disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
+                    box.pack_start(label, True, True, 0)
+                    box.pack_start(connect_button, False, False, 0)
+                    box.pack_start(disconnect_button, False, False, 0)
 
-            box.pack_start(label, True, True, 0)
-            box.pack_start(connect_button, False, False, 0)
-            box.pack_start(disconnect_button, False, False, 0)
+                    row.add(box)
+                    self.bt_listbox.add(row)
+                    self.bt_listbox.show_all()
 
-            row.add(box)
+                GLib.idle_add(add_device)
 
-            self.bt_listbox.add(row)
+            GLib.idle_add(self.bt_spinner.stop)
 
-        self.bt_listbox.show_all()
+        threading.Thread(target=scan_devices, daemon=True).start()
 
     def show_error(self, message):
         """ Displays an error message in a popup """
@@ -610,6 +624,7 @@ if __name__ == "__main__":
     win = HyprlandSettingsApp()
     win.connect("destroy", Gtk.main_quit)
     GLib.idle_add(lambda: win.refresh_wifi(None))  # Refresh WiFi list asynchronously when window is shown
+    GLib.idle_add(lambda: win.refresh_bluetooth(None))  # Refresh Bluetooth list asynchronously when window is shown
     win.show_all()
     Gtk.main()
 
