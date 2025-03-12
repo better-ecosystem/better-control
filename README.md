@@ -50,7 +50,7 @@ environment.systemPackages = with pkgs; [
 ```
 `sudo nixos-rebuild switch`
 
-### After you get the dependencies 
+## After you get the dependencies 
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
