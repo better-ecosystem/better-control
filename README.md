@@ -55,6 +55,7 @@ environment.systemPackages = with pkgs; [
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
 sudo make install
+sudo rm -rf ~/better-control
 
 ```
 # How to uninstall? ❌ 
@@ -62,6 +63,7 @@ sudo make install
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
 sudo make uninstall
+sudo rm -rf ~/better-control
 
 ```
 # Compatability 📄
