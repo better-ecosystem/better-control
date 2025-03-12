@@ -1,6 +1,6 @@
 PREFIX ?= /usr/local
 BIN_DIR := $(PREFIX)/bin
-DESKTOP_DIR := $(PREFIX)/share/applications
+DESKTOP_DIR := /usr/share/applications
 CONFIG_DIR := $(HOME)/.config
 APP_NAME := control
 SRC := src/control.py
