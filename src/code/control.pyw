@@ -603,3 +603,5 @@ if __name__ == "__main__":
     win.show_all()
     Gtk.main()
 
+# Copyright (C) 2025 quantumvoid0
+# Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0)
