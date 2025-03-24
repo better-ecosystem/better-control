@@ -495,15 +495,16 @@ class BatteryTab(Gtk.Box):
         
         # First check if we can get battery info from /sys/class/power_supply
         battery_paths = []
-        for i in range(10):  # Check for BAT0 through BAT9
-            path = f"/sys/class/power_supply/BAT{i}"
-            if os.path.exists(path):
+        for root, dirs, files in os.walk('/sys/class/power_supply/', topdown=False):
+          for name in dirs:
+              path = os.path.join(root, name)
+              if os.path.exists(path):
                 battery_paths.append(path)
         
         # Create battery sections
         for path in battery_paths:
             batteries_found += 1
-            battery_num = os.path.basename(path).replace("BAT", "")
+            battery_id = os.path.basename(path)
             
             # Calculate grid position (2x2 layout)
             grid_x = (batteries_found - 1) % 2
@@ -516,14 +517,14 @@ class BatteryTab(Gtk.Box):
             battery_grid.set_margin_bottom(15)
             
             # Add battery title
-            title = f"Battery {battery_num}"
+            title = f"Battery {battery_id}"
             # Try to get model name for a better title
             if os.path.exists(f"{path}/model_name"):
                 try:
                     with open(f"{path}/model_name", "r") as f:
                         model = f.read().strip()
                         if model:
-                            title = f"{model} (BAT{battery_num})"
+                            title = f"{model} ({battery_id})"
                 except:
                     pass
             
