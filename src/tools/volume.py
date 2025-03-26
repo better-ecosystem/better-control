@@ -114,10 +114,6 @@ def get_sources() -> List[Dict[str, str]]:
         logging.error(f"Error getting sources: {e}")
         return []
 
-import subprocess
-import re
-from typing import List, Dict
-
 def get_applications() -> List[Dict[str, str]]:
     output = subprocess.getoutput("pactl list sink-inputs")
     apps = []
@@ -169,8 +165,6 @@ def get_applications() -> List[Dict[str, str]]:
 
     print("Parsed Applications:", apps)
     return apps
-
-
 
 def set_application_volume(app_id: str, value: int) -> None:
     """Set volume for a specific application
