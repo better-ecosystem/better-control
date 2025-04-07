@@ -748,15 +748,6 @@ class PowerTab(Gtk.Box):
 
             box.pack_start(notebook, True, True, 0)
 
-            btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-            btn_box.set_halign(Gtk.Align.END)
-            btn_box.set_margin_top(10)
-
-            apply_button = Gtk.Button(label=getattr(self.txt, 'power_menu_apply', 'Apply'))
-            apply_button.connect("clicked", self.on_apply_settings)
-            btn_box.pack_end(apply_button, False, False, 0)
-
-            box.pack_start(btn_box, False, False, 0)
 
             box.show_all()
             self.settings_popover.add(box)
@@ -764,18 +755,21 @@ class PowerTab(Gtk.Box):
     def on_option_toggled(self, switch, gparam, option_id):
         """Handle option switch toggle"""
         self.active_buttons[option_id] = switch.get_active()
+        self.apply_settings()
 
     def on_keybinds_toggled(self, switch, gparam):
         """Handle keybinds visibility toggle"""
         self.show_keybinds = switch.get_active()
         self.active_buttons["show_keybinds"] = self.show_keybinds
+        self.apply_settings()
 
     def on_reset_command(self, button, option_id, entry, default_cmd):
         """Reset command to default value"""
         entry.set_text(default_cmd)
+        self.apply_settings()
 
-    def on_apply_settings(self, button):
-        """Handle apply button click"""
+    def apply_settings(self):
+        """Apply and save current settings, update UI"""
         # Get current commands from entries
         commands = {}
         for option_id, entry in self.command_entries.items():
@@ -811,6 +805,10 @@ class PowerTab(Gtk.Box):
 
         # Rebuild the grid to show updated shortcut labels
         self._build_power_grid()
+
+    def on_apply_settings(self, button):
+        """Handle apply button click"""
+        self.apply_settings()
         self.settings_popover.popdown()
 
     def on_settings_clicked(self, button):
@@ -1004,14 +1002,13 @@ class PowerTab(Gtk.Box):
         css = f".preview-button {{ background-color: {hex_color}; color: white; font-weight: bold; border-radius: 6px; }}"
         style_provider.load_from_data(css.encode())
 
-        # Remove old provider and add new one
+        # Add new provider (GTK3 does not support listing/removing providers)
         style_context = preview_button.get_style_context()
-        for provider in style_context.list_providers():
-            style_context.remove_provider(provider)
-
         style_context.add_provider(
             style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+
+        self.apply_settings()
 
     def on_update_color_entry(self, color_button, entry):
         """Update color entry when color button changes"""
@@ -1032,14 +1029,13 @@ class PowerTab(Gtk.Box):
         css = f".preview-button {{ background-color: {default_color}; color: white; font-weight: bold; border-radius: 6px; }}"
         style_provider.load_from_data(css.encode())
 
-        # Remove old provider and add new one
+        # Add new provider (GTK3 does not support listing/removing providers)
         style_context = preview_button.get_style_context()
-        for provider in style_context.list_providers():
-            style_context.remove_provider(provider)
-
         style_context.add_provider(
             style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+
+        self.apply_settings()
 
     def on_shortcut_key_press(self, entry, event, option_id):
         """Handle key press in shortcut entry"""
@@ -1057,6 +1053,8 @@ class PowerTab(Gtk.Box):
         # Update the entry
         entry.set_text(keychar)
 
+        self.apply_settings()
+
         # Prevent further processing
         return True
 
@@ -1066,3 +1064,4 @@ class PowerTab(Gtk.Box):
 
         # Update the active_buttons dictionary
         self.active_buttons[option_id] = True
+        self.apply_settings()
