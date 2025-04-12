@@ -185,6 +185,10 @@ class BetterControl(Gtk.Window):
             "USBGuard": USBGuardTab,
         }
 
+        # Skip animations and background loading in minimal mode
+        if self.minimal_mode:
+            self.logging.log(LogLevel.Info, "Minimal mode optimizations enabled")
+
         # Map tab names to translated labels
         self.tab_name_mapping = {
             "Volume": self.txt.msg_tab_volume,
@@ -374,6 +378,10 @@ class BetterControl(Gtk.Window):
             thread.start()
 
         def delayed_preload():
+            # Skip preloading other tabs in minimal mode
+            if self.minimal_mode:
+                return
+                
             # Load all other tabs after 3 second delay
             visible_tabs = [name for name in tab_order 
                           if visibility.get(name, True) and name != active_tab]
@@ -598,7 +606,6 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, "Minimal mode: Finalizing UI with single tab")
 
                 # In minimal mode, we only need to set the active tab
-                # and remove the loading page
                 active_tab = None
 
                 # Find the tab we loaded
@@ -609,12 +616,11 @@ class BetterControl(Gtk.Window):
                     self.notebook.set_current_page(page_num)
                     active_tab = tab_name
 
-                    # Set the window title
-                    translated_tab_name = self.tab_name_mapping.get(tab_name, tab_name) if hasattr(self, 'tab_name_mapping') else tab_name
-                    self.set_title(f"Better Control - {translated_tab_name}")
+                    # Set the window title (simplified for minimal mode)
+                    self.set_title(f"Better Control - {tab_name}")
 
-                    # Show all to ensure content is visible
-                    self.show_all()
+                    # Skip full show_all() in minimal mode - just show the window
+                    self.show()
             else:
                 # Normal mode: Apply tab order and visibility
                 self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
