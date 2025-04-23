@@ -16,6 +16,7 @@ class SettingsTab(Gtk.Box):
     __gsignals__ = {
         'tab-visibility-changed': (GObject.SignalFlags.RUN_LAST, None, (str, bool,)),
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
+        'vertical-tabs-changed': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
     }
 
     def __init__(self, logging: Logger, txt: English | Spanish | Portuguese | French):
@@ -170,6 +171,32 @@ class SettingsTab(Gtk.Box):
 
         self.update_ui_order()
 
+        # Add vertical tabs toggle
+        vertical_tabs_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        vertical_tabs_row.set_hexpand(True)
+        vertical_tabs_row.set_margin_top(10)
+        vertical_tabs_row.set_margin_bottom(10)
+
+        vertical_tabs_label = Gtk.Label(label=self.txt.settings_vertical_tabs_label if hasattr(self.txt, 'settings_vertical_tabs_label') else "Enable Vertical Tabs")
+        vertical_tabs_label.set_halign(Gtk.Align.START)
+        vertical_tabs_row.pack_start(vertical_tabs_label, True, True, 0)
+
+        self.vertical_tabs_switch = Gtk.Switch()
+        vertical_tabs_enabled = self.settings.get("vertical_tabs", False)
+        self.vertical_tabs_switch.set_active(vertical_tabs_enabled)
+        self.vertical_tabs_switch.set_size_request(40, 20)
+        self.vertical_tabs_switch.set_valign(Gtk.Align.CENTER)
+        self.vertical_tabs_switch.connect("notify::active", self.on_vertical_tabs_toggled)
+
+        vertical_tabs_switch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        vertical_tabs_switch_box.set_size_request(50, 24)
+        vertical_tabs_switch_box.set_valign(Gtk.Align.CENTER)
+        vertical_tabs_switch_box.pack_start(self.vertical_tabs_switch, True, False, 0)
+
+        vertical_tabs_row.pack_end(vertical_tabs_switch_box, False, False, 0)
+
+        self.tab_section.pack_start(vertical_tabs_row, False, False, 0)
+
         tab_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.MENU)
         tab_text = Gtk.Label(label="Tab Settings")
         tab_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -254,6 +281,13 @@ class SettingsTab(Gtk.Box):
         self.settings["visibility"][tab_name] = active
         save_settings(self.settings, self.logging)
         self.emit("tab-visibility-changed", tab_name, active)
+
+    def on_vertical_tabs_toggled(self, switch, gparam):
+        active = switch.get_active()
+        self.settings["vertical_tabs"] = active
+        save_settings(self.settings, self.logging)
+        # Emit a custom signal if needed to notify main window
+        self.emit("vertical-tabs-changed", active)
 
     def on_move_up_clicked(self, button, tab_name):
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])

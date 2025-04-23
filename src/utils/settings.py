@@ -28,7 +28,8 @@ def load_settings(logging: Logger) -> dict:
         "visibility": {},
         "positions": {},
         "usbguard_hidden_devices": [],
-        "language": "en"
+        "language": "en",
+        "vertical_tabs": False
     }
 
     if not os.path.exists(SETTINGS_FILE):
@@ -71,7 +72,8 @@ def save_settings(settings: dict, logging: Logger) -> bool:
             "visibility": {},
             "positions": {},
             "usbguard_hidden_devices": [],
-            "language": "en"
+            "language": "en",
+            "vertical_tabs": False
         }
         for key in default_settings:
             if key not in settings:

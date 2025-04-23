@@ -145,6 +145,12 @@ class BetterControl(Gtk.Window):
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
 
+        # Set vertical tabs if enabled in settings
+        if self.settings.get("vertical_tabs", False):
+            self.notebook.set_tab_pos(Gtk.PositionType.LEFT)
+        else:
+            self.notebook.set_tab_pos(Gtk.PositionType.TOP)
+
         # Hide tab bar in minimal mode
         if self.minimal_mode:
             self.notebook.set_show_tabs(False)
@@ -1021,8 +1027,8 @@ class BetterControl(Gtk.Window):
         self.settings_icon.get_style_context().add_class("rotate-gear")
         settings_button.set_tooltip_text(self.txt.settings_title)
 
-        # Connect the clicked signal
-        settings_button.connect("clicked", self.toggle_settings_panel)
+        # Connect the clicked signal with event controller to detect modifiers
+        settings_button.connect("button-press-event", self.on_settings_button_pressed)
 
         # Add to the notebook action area
         self.notebook.set_action_widget(settings_button, Gtk.PackType.END)
@@ -1031,6 +1037,65 @@ class BetterControl(Gtk.Window):
         self.logging.log(
             LogLevel.Info, "Settings button created and attached to notebook"
         )
+
+    def on_settings_button_pressed(self, widget, event):
+        """Handle settings button press to detect Ctrl+Click"""
+        # Check if left mouse button (1) and Ctrl key pressed
+        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 1:
+            state = event.state
+            ctrl_mask = Gdk.ModifierType.CONTROL_MASK
+            if state & ctrl_mask:
+                self.show_app_info_dialog()
+                return True  # Stop further handling
+
+            # Otherwise, normal click opens settings panel
+            self.toggle_settings_panel(widget)
+            return True
+
+        return False
+
+    def show_app_info_dialog(self):
+        """Show a dialog with app version, name, and info"""
+        dialog = Gtk.Dialog(
+            title="About Better Control",
+            parent=self,
+            flags=Gtk.DialogFlags.MODAL,
+            buttons=(Gtk.STOCK_CLOSE, Gtk.ResponseType.CLOSE),
+        )
+        dialog.set_default_size(400, 200)
+        dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
+
+        content_area = dialog.get_content_area()
+
+        # Create a box to hold info
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_border_width(10)
+
+        # App name label
+        app_name_label = Gtk.Label()
+        app_name_label.set_markup("<span size='xx-large' weight='bold'>Better Control</span>")
+        app_name_label.set_justify(Gtk.Justification.CENTER)
+        box.pack_start(app_name_label, False, False, 0)
+
+        # Version label (hardcoded or could be dynamic)
+        version_label = Gtk.Label(label="Version: v6.11")
+        version_label.set_justify(Gtk.Justification.CENTER)
+        box.pack_start(version_label, False, False, 0)
+
+        # Description label
+        desc_label = Gtk.Label(label="A sleek GTK-themed control panel for Linux.")
+        desc_label.set_justify(Gtk.Justification.CENTER)
+        box.pack_start(desc_label, False, False, 0)
+
+        # Add box to content area
+        content_area.add(box)
+
+        dialog.show_all()
+
+        # Run dialog and wait for response
+        response = dialog.run()
+        if response == Gtk.ResponseType.CLOSE:
+            dialog.destroy()
 
     def toggle_settings_panel(self, widget):
         self.logging.log(
@@ -1055,6 +1120,7 @@ class BetterControl(Gtk.Window):
                 "tab-visibility-changed", self.on_tab_visibility_changed
             )
             settings_tab.connect("tab-order-changed", self.on_tab_order_changed)
+            settings_tab.connect("vertical-tabs-changed", self.on_vertical_tabs_changed)
             # Add the settings content to the dialog's content area
             content_area = dialog.get_content_area()
             content_area.add(settings_tab)
@@ -1117,6 +1183,15 @@ class BetterControl(Gtk.Window):
         self.settings["tab_order"] = tab_order
         save_settings(self.settings, self.logging)
         self.apply_tab_order()
+
+    def on_vertical_tabs_changed(self, widget, active):
+        """Handle vertical tabs toggled signal from settings tab"""
+        self.settings["vertical_tabs"] = active
+        save_settings(self.settings, self.logging)
+        if active:
+            self.notebook.set_tab_pos(Gtk.PositionType.LEFT)
+        else:
+            self.notebook.set_tab_pos(Gtk.PositionType.TOP)
 
     def create_tab_label(self, text: str, icon_name: str) -> Gtk.Box:
         """Create a tab label with icon and text
