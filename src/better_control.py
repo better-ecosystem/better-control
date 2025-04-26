@@ -2,9 +2,13 @@
 
 import os
 import subprocess
-from typing import Any
-import gi  # type: ignore
 import sys
+try:
+    import importlib.metadata
+except ImportError:
+    # Fallback for Python < 3.8
+    import importlib_metadata as importlib
+import gi  # type: ignore
 from setproctitle import setproctitle
 import signal
 from utils.arg_parser import ArgParse
@@ -420,6 +424,9 @@ def initialize_and_start():
 
     logger = setup_logging(arg_parser)
 
+    # Check and install pip dependencies early
+    check_and_install_pip_dependencies(logger)
+
     setup_temp_directory(logger)
 
     txt = process_language(arg_parser, logger)
@@ -451,6 +458,43 @@ def initialize_and_start():
 
         traceback.print_exc()
         sys.exit(1)
+
+
+def check_and_install_pip_dependencies(logger):
+    """Checks for and installs pip dependencies from requirements.txt"""
+    logger.log(LogLevel.Info, "Checking Python package dependencies...")
+    try:
+        with open("requirements.txt", "r") as f:
+            required_packages = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+    except FileNotFoundError:
+        logger.log(LogLevel.Warn, "requirements.txt not found. Skipping pip dependency check.")
+        return
+
+    pip_executable = sys.executable + " -m pip"
+
+    for package in required_packages:
+        try:
+            # Extract package name if version specifier exists (e.g., package==1.0)
+            package_name = package.split('==')[0].split('>')[0].split('<')[0]
+            importlib.metadata.version(package_name)
+            logger.log(LogLevel.Info, f"Package '{package_name}' is already installed.")
+        except importlib.metadata.PackageNotFoundError:
+            logger.log(LogLevel.Warn, f"Package '{package_name}' not found. Attempting installation...")
+            try:
+                # Use sys.executable to ensure pip for the correct Python env is used
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", package],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                logger.log(LogLevel.Info, f"Successfully installed '{package_name}'. Output:\n{result.stdout}")
+            except subprocess.CalledProcessError as e:
+                logger.log(LogLevel.Error, f"Failed to install '{package_name}'. Error:\n{e.stderr}")
+                # Decide if you want to exit or just warn
+                # sys.exit(f"Failed to install required package: {package_name}")
+            except Exception as e:
+                 logger.log(LogLevel.Error, f"An unexpected error occurred during installation of '{package_name}': {e}")
 
 
 if __name__ == "__main__":

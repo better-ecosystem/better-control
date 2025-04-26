@@ -5,23 +5,547 @@ import dbus.mainloop.glib
 from gi.repository import GLib  # type: ignore
 import subprocess
 import threading
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Any, Union, TypeVar, cast, Tuple, NamedTuple
 import time  # For proper sleep handling
 import os
+import functools
+from pathlib import Path
 
 from utils.logger import LogLevel, Logger
 
+# D-Bus interfaces constants
 BLUEZ_SERVICE_NAME = "org.bluez"
 BLUEZ_ADAPTER_INTERFACE = "org.bluez.Adapter1"
 BLUEZ_DEVICE_INTERFACE = "org.bluez.Device1"
+BLUEZ_BATTERY_INTERFACE = "org.bluez.Battery1"
 DBUS_OM_IFACE = "org.freedesktop.DBus.ObjectManager"
 DBUS_PROP_IFACE = "org.freedesktop.DBus.Properties"
-BLUEZ_SERVICE_NAME = 'org.bluez'
-BLUEZ_ADAPTER_INTERFACE = 'org.bluez.Adapter1'
-BLUEZ_DEVICE_INTERFACE = 'org.bluez.Device1'
-DBUS_OM_IFACE = 'org.freedesktop.DBus.ObjectManager'
-DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
-DEFAULT_NOTIFY_SUBJECT='Better Control'
+DEFAULT_NOTIFY_SUBJECT = "Better Control"
+
+# Timeouts and retry settings
+DBUS_INIT_TIMEOUT = 10  # seconds
+DBUS_CONNECT_RETRIES = 3
+COMMAND_TIMEOUT = 3  # seconds
+DEFAULT_MAX_RETRIES = 5
+DEFAULT_BACKOFF_FACTOR = 0.5  # seconds
+
+# Audio settings
+PULSE_CONFIG_DIR = Path("~/.config/pulse").expanduser()
+SINK_STATE_FILE = PULSE_CONFIG_DIR / "default-sink"
+
+# Custom exception types for more specific error handling
+class DBusInitError(Exception):
+    """Raised when D-Bus initialization fails"""
+    pass
+
+class BluetoothCommandError(Exception):
+    """Raised when a Bluetooth command fails"""
+    pass
+
+class AudioRoutingError(Exception):
+    """Raised when audio routing fails"""
+    pass
+
+# Type alias for easier type hints
+T = TypeVar('T')
+ReturnType = TypeVar('ReturnType')
+DBusPropertyType = Union[bool, str, int, float, List[Any], Dict[str, Any]]
+
+# Helper for retry logic with exponential backoff
+def with_retries(max_retries: int = DEFAULT_MAX_RETRIES, 
+                 base_delay: float = DEFAULT_BACKOFF_FACTOR, 
+                 timeout: float = DBUS_INIT_TIMEOUT,
+                 exceptions_to_catch: tuple = (Exception,)):
+    """Decorator for retrying functions with exponential backoff
+    
+    Args:
+        max_retries: Maximum number of retry attempts
+        base_delay: Base delay between retries in seconds (will be multiplied by 2^attempt)
+        timeout: Total timeout for all attempts in seconds
+        exceptions_to_catch: Tuple of exception types to catch and retry
+    """
+    def decorator(func: Callable[..., ReturnType]) -> Callable[..., ReturnType]:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> ReturnType:
+            start_time = time.time()
+            last_exception = None
+            
+            for attempt in range(max_retries):
+                # Check if we've exceeded the timeout
+                if time.time() - start_time > timeout:
+                    if last_exception:
+                        raise last_exception
+                    raise TimeoutError(f"Function {func.__name__} timed out after {timeout}s")
+                
+                try:
+                    return func(*args, **kwargs)
+                except exceptions_to_catch as e:
+                    last_exception = e
+                    # Don't sleep on the last attempt
+                    if attempt < max_retries - 1:
+                        # Calculate delay with exponential backoff
+                        delay = base_delay * (2 ** attempt)
+                        # Make sure we don't exceed the timeout
+                        if time.time() + delay - start_time > timeout:
+                            delay = max(0, timeout - (time.time() - start_time))
+                        time.sleep(delay)
+            
+            # If we get here, we've exhausted all retries
+            if last_exception:
+                raise last_exception
+            # This should never happen if we catch all exceptions specified
+            raise RuntimeError(f"Function {func.__name__} failed after {max_retries} attempts")
+        
+        return wrapper
+    return decorator
+
+# Helper for sending desktop notifications
+def send_notification(title: str, message: str, logging: Logger) -> bool:
+    """Send a desktop notification and log any errors
+    
+    Args:
+        title: Notification title
+        message: Notification message
+        logging: Logger instance
+    
+    Returns:
+        bool: True if notification was sent successfully, False otherwise
+    """
+    try:
+        result = subprocess.run(
+            ["notify-send", title, message],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=COMMAND_TIMEOUT
+        )
+        if result.returncode != 0:
+            logging.log(LogLevel.Warn, 
+                        f"Failed to send notification: {result.stderr.strip()}")
+            return False
+        return True
+    except subprocess.SubprocessError as e:
+        logging.log(LogLevel.Error, f"Error sending notification: {e}")
+        return False
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Unexpected error sending notification: {e}")
+        return False
+
+
+class AudioSink(NamedTuple):
+    """Represents a PulseAudio sink"""
+    id: int
+    name: str
+    description: str
+    is_bluetooth: bool = False
+    
+class AudioSource(NamedTuple):
+    """Represents a PulseAudio source"""
+    id: int
+    name: str
+    description: str
+    is_bluetooth: bool = False
+
+
+class AudioRouter:
+    """Manages audio routing between devices, especially for Bluetooth"""
+    
+    def __init__(self, logging: Logger):
+        """Initialize the audio router
+        
+        Args:
+            logging: Logger instance for recording events
+        """
+        self.logging = logging
+        self.callbacks: List[Callable[[str], None]] = []
+        self.current_sink: Optional[str] = None
+        
+        # Ensure the PulseAudio config directory exists
+        PULSE_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        
+    def register_callback(self, callback: Callable[[str], None]) -> None:
+        """Register a callback to be notified when audio routing changes
+        
+        Args:
+            callback: Function to call with the new sink name when routing changes
+        """
+        if callback not in self.callbacks:
+            self.callbacks.append(callback)
+            
+    def unregister_callback(self, callback: Callable[[str], None]) -> None:
+        """Remove an audio routing callback
+        
+        Args:
+            callback: Callback function to remove
+        """
+        if callback in self.callbacks:
+            self.callbacks.remove(callback)
+    
+    @with_retries(max_retries=3, base_delay=0.5, timeout=5)
+    def list_sinks(self) -> List[AudioSink]:
+        """Get list of available audio sinks
+        
+        Returns:
+            List of AudioSink objects
+        
+        Raises:
+            AudioRoutingError: If listing sinks fails
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "list", "sinks", "short"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=COMMAND_TIMEOUT
+            )
+            
+            sinks = []
+            for line in result.stdout.strip().splitlines():
+                if not line:
+                    continue
+                    
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                    
+                sink_id = int(parts[0])
+                name = parts[1]
+                description = " ".join(parts[2:]) if len(parts) > 2 else name
+                is_bluetooth = "bluez" in name.lower()
+                
+                sinks.append(AudioSink(
+                    id=sink_id,
+                    name=name,
+                    description=description,
+                    is_bluetooth=is_bluetooth
+                ))
+                
+            return sinks
+        except subprocess.SubprocessError as e:
+            self.logging.log(LogLevel.Error, f"Failed to list audio sinks: {e}")
+            raise AudioRoutingError(f"Failed to list audio sinks: {e}")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Unexpected error listing audio sinks: {e}")
+            raise AudioRoutingError(f"Unexpected error listing audio sinks: {e}")
+    
+    @with_retries(max_retries=3, base_delay=0.5, timeout=5)
+    def list_sources(self) -> List[AudioSource]:
+        """Get list of available audio sources
+        
+        Returns:
+            List of AudioSource objects
+        
+        Raises:
+            AudioRoutingError: If listing sources fails
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "list", "sources", "short"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=COMMAND_TIMEOUT
+            )
+            
+            sources = []
+            for line in result.stdout.strip().splitlines():
+                if not line:
+                    continue
+                    
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                    
+                source_id = int(parts[0])
+                name = parts[1]
+                description = " ".join(parts[2:]) if len(parts) > 2 else name
+                is_bluetooth = "bluez" in name.lower()
+                
+                sources.append(AudioSource(
+                    id=source_id,
+                    name=name,
+                    description=description,
+                    is_bluetooth=is_bluetooth
+                ))
+                
+            return sources
+        except subprocess.SubprocessError as e:
+            self.logging.log(LogLevel.Error, f"Failed to list audio sources: {e}")
+            raise AudioRoutingError(f"Failed to list audio sources: {e}")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Unexpected error listing audio sources: {e}")
+            raise AudioRoutingError(f"Unexpected error listing audio sources: {e}")
+            
+    def get_current_sink(self) -> Optional[str]:
+        """Get the currently active audio sink name
+        
+        Returns:
+            Name of current audio sink or None if not available
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "get-default-sink"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=COMMAND_TIMEOUT
+            )
+            sink_name = result.stdout.strip()
+            return sink_name if sink_name else None
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed getting current audio sink: {e}")
+            return None
+            
+    def get_current_source(self) -> Optional[str]:
+        """Get the currently active audio source name
+        
+        Returns:
+            Name of current audio source or None if not available
+        """
+        try:
+            result = subprocess.run(
+                ["pactl", "get-default-source"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=COMMAND_TIMEOUT
+            )
+            source_name = result.stdout.strip()
+            return source_name if source_name else None
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed getting current audio source: {e}")
+            return None
+    
+    @with_retries(max_retries=3, base_delay=0.5, timeout=5)
+    def set_default_sink(self, sink_name: str) -> bool:
+        """Set the default audio sink
+        
+        Args:
+            sink_name: Name of the sink to set as default
+            
+        Returns:
+            True if successful, False otherwise
+            
+        Raises:
+            AudioRoutingError: If setting the default sink fails
+        """
+        try:
+            # Verify sink exists before setting it
+            sinks = self.list_sinks()
+            sink_exists = any(sink.name == sink_name for sink in sinks)
+            
+            if not sink_exists:
+                self.logging.log(LogLevel.Warn, f"Audio sink '{sink_name}' not found")
+                raise AudioRoutingError(f"Audio sink '{sink_name}' not found")
+                
+            result = subprocess.run(
+                ["pactl", "set-default-sink", sink_name],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=COMMAND_TIMEOUT
+            )
+            
+            # Update current sink and save to file
+            self.current_sink = sink_name
+            self._save_sink_state(sink_name)
+            
+            # Notify callbacks
+            for callback in self.callbacks:
+                try:
+                    callback(sink_name)
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+                    
+            self.logging.log(LogLevel.Info, f"Set default sink to: {sink_name}")
+            return True
+        except subprocess.SubprocessError as e:
+            self.logging.log(LogLevel.Error, f"Failed to set default sink: {e}")
+            raise AudioRoutingError(f"Failed to set default sink: {e}")
+        except AudioRoutingError:
+            # Re-raise AudioRoutingError without wrapping it
+            raise
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Unexpected error setting default sink: {e}")
+            raise AudioRoutingError(f"Unexpected error setting default sink: {e}")
+            
+    @with_retries(max_retries=3, base_delay=0.5, timeout=5)
+    def set_default_source(self, source_name: str) -> bool:
+        """Set the default audio source
+        
+        Args:
+            source_name: Name of the source to set as default
+            
+        Returns:
+            True if successful, False otherwise
+            
+        Raises:
+            AudioRoutingError: If setting the default source fails
+        """
+        try:
+            # Verify source exists before setting it
+            sources = self.list_sources()
+            source_exists = any(source.name == source_name for source in sources)
+            
+            if not source_exists:
+                self.logging.log(LogLevel.Warn, f"Audio source '{source_name}' not found")
+                raise AudioRoutingError(f"Audio source '{source_name}' not found")
+                
+            result = subprocess.run(
+                ["pactl", "set-default-source", source_name],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=COMMAND_TIMEOUT
+            )
+            
+            self.logging.log(LogLevel.Info, f"Set default source to: {source_name}")
+            return True
+        except subprocess.SubprocessError as e:
+            self.logging.log(LogLevel.Error, f"Failed to set default source: {e}")
+            raise AudioRoutingError(f"Failed to set default source: {e}")
+        except AudioRoutingError:
+            # Re-raise AudioRoutingError without wrapping it
+            raise
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Unexpected error setting default source: {e}")
+            raise AudioRoutingError(f"Unexpected error setting default source: {e}")
+    
+    def _save_sink_state(self, sink_name: str) -> None:
+        """Save the current sink name to a file for later restoration
+        
+        Args:
+            sink_name: Name of sink to save
+        """
+        try:
+            with open(SINK_STATE_FILE, 'w') as f:
+                f.write(sink_name)
+            self.logging.log(LogLevel.Debug, f"Saved sink state: {sink_name}")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to save sink state: {e}")
+            
+    def restore_saved_sink(self) -> bool:
+        """Restore the previously saved audio sink
+        
+        Returns:
+            True if restoration was successful, False otherwise
+        """
+        try:
+            if not SINK_STATE_FILE.exists():
+                self.logging.log(LogLevel.Debug, "No saved sink state file found")
+                return False
+                
+            with open(SINK_STATE_FILE, 'r') as f:
+                saved_sink = f.read().strip()
+                
+            if not saved_sink:
+                self.logging.log(LogLevel.Debug, "Saved sink state file is empty")
+                return False
+                
+            # Get current sinks and check if saved sink is available
+            sinks = self.list_sinks()
+            if not any(sink.name == saved_sink for sink in sinks):
+                self.logging.log(LogLevel.Info, f"Saved sink '{saved_sink}' is not currently available")
+                return False
+                
+            # Restore the sink
+            self.logging.log(LogLevel.Info, f"Restoring saved sink: {saved_sink}")
+            return self.set_default_sink(saved_sink)
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error restoring saved sink: {e}")
+            return False
+            
+    def switch_to_bluetooth_audio(self, device_path: str) -> bool:
+        """Switch both input and output audio to a Bluetooth device
+        
+        Args:
+            device_path: D-Bus path of the Bluetooth device
+            
+        Returns:
+            True if at least one audio endpoint was switched, False otherwise
+        """
+        success = False
+        
+        try:
+            # Wait a short time for the audio device to register
+            time.sleep(1)
+            
+            # Get available sinks and sources
+            sinks = self.list_sinks()
+            sources = self.list_sources()
+            
+            # Find Bluetooth sinks and sources
+            bluetooth_sinks = [sink for sink in sinks if sink.is_bluetooth]
+            bluetooth_sources = [source for source in sources if source.is_bluetooth]
+            
+            if not bluetooth_sinks and not bluetooth_sources:
+                self.logging.log(LogLevel.Debug, "No Bluetooth audio devices found, retrying...")
+                # Wait and retry once more
+                time.sleep(2)
+                sinks = self.list_sinks()
+                sources = self.list_sources()
+                bluetooth_sinks = [sink for sink in sinks if sink.is_bluetooth]
+                bluetooth_sources = [source for source in sources if source.is_bluetooth]
+                
+                if not bluetooth_sinks and not bluetooth_sources:
+                    self.logging.log(LogLevel.Warn, "No Bluetooth audio devices found after retry")
+                    return False
+            
+            # Switch output if available
+            if bluetooth_sinks:
+                sink = bluetooth_sinks[0]
+                self.set_default_sink(sink.name)
+                self.logging.log(LogLevel.Info, f"Switched to Bluetooth output: {sink.name}")
+                success = True
+            
+            # Switch input if available
+            if bluetooth_sources:
+                source = bluetooth_sources[0]
+                self.set_default_source(source.name)
+                self.logging.log(LogLevel.Info, f"Switched to Bluetooth input: {source.name}")
+                success = True
+                
+            return success
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to switch to Bluetooth audio: {e}")
+            return False
+            
+    def switch_to_default_audio(self) -> bool:
+        """Switch back to default (non-Bluetooth) audio devices
+        
+        Returns:
+            True if at least one audio endpoint was switched, False otherwise
+        """
+        success = False
+        
+        try:
+            # Get available sinks and sources
+            sinks = self.list_sinks()
+            sources = self.list_sources()
+            
+            # Find non-Bluetooth sinks and sources
+            regular_sinks = [sink for sink in sinks if not sink.is_bluetooth]
+            regular_sources = [source for source in sources if not source.is_bluetooth]
+            
+            # Switch output if available
+            if regular_sinks:
+                sink = regular_sinks[0]
+                self.set_default_sink(sink.name)
+                self.logging.log(LogLevel.Info, f"Switched to default output: {sink.name}")
+                success = True
+            
+            # Switch input if available
+            if regular_sources:
+                source = regular_sources[0]
+                self.set_default_source(source.name)
+                self.logging.log(LogLevel.Info, f"Switched to default input: {source.name}")
+                success = True
+                
+            return success
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to switch to default audio: {e}")
+            return False
 
 
 class BluetoothManager:
@@ -30,10 +554,20 @@ class BluetoothManager:
         self.adapter = None
         self.adapter_path = None
         self.bus = None
-        self.audio_routing_callbacks = []
-        self.current_audio_sink = None
+        self.audio_router = AudioRouter(logging_instance)
         self.signal_match = None
 
+        # Initialize D-Bus with retries
+        self._init_dbus()
+        
+    @with_retries(max_retries=DBUS_CONNECT_RETRIES, timeout=DBUS_INIT_TIMEOUT, 
+                  exceptions_to_catch=(dbus.DBusException,))
+    def _init_dbus(self) -> None:
+        """Initialize D-Bus connection with retries
+        
+        Raises:
+            DBusInitError: If D-Bus initialization fails after retries
+        """
         try:
             # Initialize DBus with mainloop
             dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -61,21 +595,36 @@ class BluetoothManager:
                 self.logging.log(LogLevel.Warn, "No Bluetooth adapter found")
         except dbus.DBusException as e:
             self.logging.log(LogLevel.Error, f"DBus error initializing Bluetooth: {e}")
+            raise DBusInitError(f"DBus error initializing Bluetooth: {e}")
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error initializing Bluetooth: {e}")
-
-    BATTERY_INTERFACE = "org.bluez.Battery1"
+            raise DBusInitError(f"Error initializing Bluetooth: {e}")
 
     def __del__(self):
         """Cleanup resources"""
         try:
             # Clean up any resources
-            if self.signal_match:
+            if hasattr(self, 'signal_match') and self.signal_match:
                 self.signal_match.remove()
                 self.signal_match = None
+                
+            # Explicitly remove signal receiver if possible
+            if hasattr(self, 'bus') and self.bus:
+                try:
+                    self.bus.remove_signal_receiver(
+                        self._on_device_property_changed,
+                        signal_name="PropertiesChanged",
+                        dbus_interface=DBUS_PROP_IFACE
+                    )
+                except Exception:
+                    pass  # Ignore errors removing signal receiver
+
+            # Stop any running mainloop
+            if hasattr(self, 'mainloop') and self.mainloop and hasattr(self.mainloop, 'is_running') and self.mainloop.is_running():
+                self.mainloop.quit()
+                
             self.adapter = None
             self.bus = None
-            self.audio_routing_callbacks.clear()
         except Exception:
             pass  # Ignore errors during cleanup
 
@@ -88,83 +637,66 @@ class BluetoothManager:
             # Check if this is a connection state change
             if "Connected" in changed_properties and changed_properties["Connected"]:
                 # Device connected - switch audio
-                self._switch_to_bluetooth_audio(path)
+                self.audio_router.switch_to_bluetooth_audio(path)
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error handling device property change: {e}")
 
-    def _switch_to_bluetooth_audio(self, device_path):
-        """Switch both input and output audio to Bluetooth device with retries"""
-        max_attempts = 5
-        base_delay = 0.5  # seconds
-        
-        for attempt in range(max_attempts):
-            try:
-                # Get list of available sinks and sources
-                sinks_output = subprocess.getoutput("pactl list sinks short")
-                sources_output = subprocess.getoutput("pactl list sources short")
-                
-                bluez_sinks = [
-                    line.split()[1] 
-                    for line in sinks_output.splitlines() 
-                    if "bluez" in line.lower()
-                ]
-                
-                bluez_sources = [
-                    line.split()[1] 
-                    for line in sources_output.splitlines() 
-                    if "bluez" in line.lower()
-                ]
-                
-                if not bluez_sinks and not bluez_sources:
-                    if attempt == max_attempts - 1:
-                        self.logging.log(LogLevel.Warn, "No Bluetooth audio devices found after retries")
-                        return
-                    time.sleep(base_delay * (2 ** attempt))
-                    continue
-                    
-                # Switch output if available
-                if bluez_sinks:
-                    sink_name = bluez_sinks[0]
-                    verify_output = subprocess.run(["pactl", "list", "sinks", "short"], 
-                                                 capture_output=True, text=True)
-                    if sink_name in verify_output.stdout:
-                        subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
-                        self.current_audio_sink = sink_name
-                        self.logging.log(LogLevel.Info, f"Switched to Bluetooth output: {sink_name}")
-                
-                # Switch input if available
-                if bluez_sources:
-                    source_name = bluez_sources[0]
-                    verify_output = subprocess.run(["pactl", "list", "sources", "short"],
-                                                 capture_output=True, text=True)
-                    if source_name in verify_output.stdout:
-                        subprocess.run(["pactl", "set-default-source", source_name], check=True)
-                        self.logging.log(LogLevel.Info, f"Switched to Bluetooth input: {source_name}")
-                
-                # Notify callbacks with the new sink name
-                if self.current_audio_sink:
-                    for cb in self.audio_routing_callbacks:
-                        try:
-                            cb(self.current_audio_sink)
-                        except Exception as e:
-                            self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
-                else:
-                    self.logging.log(LogLevel.Warn, "No audio sink available to notify callbacks")
-                
-                return
-                
-            except subprocess.CalledProcessError as e:
-                self.logging.log(LogLevel.Error, f"Audio switch command failed (attempt {attempt+1}): {e}")
-                if attempt == max_attempts - 1:
-                    self.logging.log(LogLevel.Error, "Max retries reached for audio switching")
-                    return
-                time.sleep(base_delay * (2 ** attempt))
-            except Exception as e:
-                self.logging.log(LogLevel.Error, f"Unexpected error switching audio (attempt {attempt+1}): {e}")
-                return
-
     def get_device_battery(self, device_path: str) -> Optional[int]:
-        """Retrieve battery percentage for a Bluetooth device using busctl."""
+        """Retrieve battery percentage for a Bluetooth device
+        
+        First tries to use D-Bus Properties interface directly,
+        then falls back to busctl command.
+        
+        Args:
+            device_path: D-Bus path of the device
+            
+        Returns:
+            Battery percentage as integer, None if not available, or -1 on error
+        """
+        # First try using D-Bus directly
+        try:
+            if self.bus is None:
+                raise RuntimeError("D-Bus connection not initialized")
+                
+            battery_props = dbus.Interface(
+                self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
+                DBUS_PROP_IFACE
+            )
+            
+            # Check if device has Battery interface
+            managed_objects = dbus.Interface(
+                self.bus.get_object(BLUEZ_SERVICE_NAME, "/"),
+                DBUS_OM_IFACE
+            ).GetManagedObjects()
+            
+            if device_path in managed_objects and BLUEZ_BATTERY_INTERFACE in managed_objects[device_path]:
+                percentage = battery_props.Get(BLUEZ_BATTERY_INTERFACE, "Percentage")
+                return int(percentage)
+            
+            # No Battery interface, fall back to busctl
+            return self._get_device_battery_busctl(device_path)
+            
+        except dbus.DBusException as e:
+            if "org.freedesktop.DBus.Error.UnknownInterface" in str(e):
+                # Battery interface not available, try busctl
+                return self._get_device_battery_busctl(device_path)
+            
+            self.logging.log(LogLevel.Debug, f"D-Bus error getting battery info: {e}")
+            return self._get_device_battery_busctl(device_path)
+            
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error getting battery info: {e}")
+            return -1
+
+    def _get_device_battery_busctl(self, device_path: str) -> Optional[int]:
+        """Fallback method to get battery using busctl command
+        
+        Args:
+            device_path: D-Bus path of the device
+            
+        Returns:
+            Battery percentage as integer, None if not available, or -1 on error
+        """
         try:
             cmd = [
                 "busctl",
@@ -176,17 +708,24 @@ class BluetoothManager:
             ]
 
             # Run the command and capture the output
-            output = subprocess.run(
-                cmd, capture_output=True, text=True
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True,
+                timeout=COMMAND_TIMEOUT
             )
 
-            if output.returncode != 0:
+            if result.returncode != 0:
                 return None
             else:
-                return int(output.stdout.strip().split()[-1])
+                # Parse the output - should be something like "y 85"
+                parts = result.stdout.strip().split()
+                if len(parts) >= 2:
+                    return int(parts[-1])
+                return None
 
         except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed retrieving battery info: {e}")
+            self.logging.log(LogLevel.Error, f"Failed retrieving battery info with busctl: {e}")
             return -1  # Indicate battery info is unavailable
 
     def find_adapter(self) -> str:
@@ -228,14 +767,25 @@ class BluetoothManager:
             self.logging.log(LogLevel.Error, f"Failed getting Bluetooth status: {e}")
             return False
 
-    def set_bluetooth_power(self, enabled: bool) -> None:
-        """Set Bluetooth power state"""
+    def set_bluetooth_power(self, enabled: bool) -> bool:
+        """Set Bluetooth power state
+        
+        Args:
+            enabled: True to power on, False to power off
+            
+        Returns:
+            True if operation was successful, False otherwise
+        """
         try:
             if not self.adapter or self.bus is None:
-                return
+                self.logging.log(LogLevel.Error, "Bluetooth adapter not initialized")
+                return False
+                
             self.adapter.Set(BLUEZ_ADAPTER_INTERFACE, "Powered", dbus.Boolean(enabled))
+            return True
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed setting Bluetooth power: {e}")
+            return False
 
     def get_devices(self) -> List[Dict[str, str]]:
         """Get list of all known Bluetooth devices"""
@@ -260,9 +810,9 @@ class BluetoothManager:
                     {
                         "mac": properties.get("Address", ""),
                         "name": properties.get("Name", ""),
-                        "paired": properties.get("Paired", False),
-                        "connected": properties.get("Connected", False),
-                        "trusted": properties.get("Trusted", False),
+                        "paired": bool(properties.get("Paired", False)),
+                        "connected": bool(properties.get("Connected", False)),
+                        "trusted": bool(properties.get("Trusted", False)),
                         "icon": properties.get("Icon", ""),
                         "path": path,
                     }
@@ -272,31 +822,47 @@ class BluetoothManager:
             self.logging.log(LogLevel.Error, f"Failed getting devices: {e}")
             return []
 
-    def start_discovery(self) -> None:
-        """Start scanning for Bluetooth devices"""
+    def start_discovery(self) -> bool:
+        """Start scanning for Bluetooth devices
+        
+        Returns:
+            True if discovery started successfully, False otherwise
+        """
         try:
             if not self.adapter or self.bus is None or not self.adapter_path:
-                return
+                self.logging.log(LogLevel.Error, "Bluetooth adapter not initialized")
+                return False
+                
             adapter = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, self.adapter_path),
                 BLUEZ_ADAPTER_INTERFACE,
             )
             adapter.StartDiscovery()
+            return True
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed starting discovery: {e}")
+            return False
 
-    def stop_discovery(self) -> None:
-        """Stop scanning for Bluetooth devices"""
+    def stop_discovery(self) -> bool:
+        """Stop scanning for Bluetooth devices
+        
+        Returns:
+            True if discovery stopped successfully, False otherwise
+        """
         try:
             if not self.adapter or self.bus is None or not self.adapter_path:
-                return
+                self.logging.log(LogLevel.Error, "Bluetooth adapter not initialized")
+                return False
+                
             adapter = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, self.adapter_path),
                 BLUEZ_ADAPTER_INTERFACE,
             )
             adapter.StopDiscovery()
+            return True
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed stopping discovery: {e}")
+            return False
 
     def connect_device(self, device_path: str) -> bool:
         """Connect to a Bluetooth device, set it as the default audio sink, and fetch battery info."""
@@ -312,8 +878,6 @@ class BluetoothManager:
             device.Connect()
 
             # Wait for the device to register
-            import time
-
             time.sleep(2)
 
             # Fetch device name
@@ -325,14 +889,18 @@ class BluetoothManager:
             battery_percentage: Optional[int] = self.get_device_battery(device_path)
             battery_info: str = ''
 
-            if battery_percentage is None:
+            if battery_percentage is None or battery_percentage < 0:
                 battery_info = ""
             else:
                 battery_info = f"Battery: {battery_percentage}%"
 
-            subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
-                            f"{device_name} connected.\n{battery_info}"])
+            send_notification(DEFAULT_NOTIFY_SUBJECT, 
+                            f"{device_name} connected.\n{battery_info}", 
+                            self.logging)
 
+            # Switch to Bluetooth audio
+            self.audio_router.switch_to_bluetooth_audio(device_path)
+            
             return True
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed connecting to device: {e}")
@@ -394,17 +962,18 @@ class BluetoothManager:
                 battery_percentage: Optional[int] = self.get_device_battery(local_path)
                 battery_info: str = ''
 
-                if battery_percentage is None:
+                if battery_percentage is None or battery_percentage < 0:
                     battery_info = ""
                 else:
                     battery_info = f"Battery: {battery_percentage}%"
 
                 # Send notification
-                subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
-                                f"{device_name} connected.\n{battery_info}"])
+                send_notification(DEFAULT_NOTIFY_SUBJECT,
+                                  f"{device_name} connected.\n{battery_info}",
+                                  self.logging)
                 
                 # Automatically switch to Bluetooth audio sink
-                self._switch_to_bluetooth_audio(local_path)
+                self.audio_router.switch_to_bluetooth_audio(local_path)
                 
                 success = True
 
@@ -435,10 +1004,22 @@ class BluetoothManager:
             )
             # Fetch device name
             device_name = "Bluetooth Device"
-            device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
+            try:
+                device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
+            except Exception:
+                try:
+                    device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias")
+                except Exception:
+                    pass
+                    
             device.Disconnect()
 
-            subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT, f"{device_name} disconnected."])
+            send_notification(DEFAULT_NOTIFY_SUBJECT, 
+                             f"{device_name} disconnected.", 
+                             self.logging)
+            
+            # Switch back to default audio
+            self.audio_router.switch_to_default_audio()
 
             return True
         except Exception as e:
@@ -491,25 +1072,12 @@ class BluetoothManager:
                 time.sleep(1)
 
                 # Send notification
-                subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT, f"{device_name} disconnected."])
+                send_notification(DEFAULT_NOTIFY_SUBJECT, 
+                                 f"{device_name} disconnected.", 
+                                 self.logging)
                 
                 # Automatically switch back to default non-Bluetooth sink
-                try:
-                    # Get list of available sinks
-                    sinks_output = subprocess.getoutput("pactl list sinks short")
-                    for line in sinks_output.splitlines():
-                        if "bluez" not in line.lower():
-                            sink_name = line.split()[1]
-                            subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
-                            self.current_audio_sink = sink_name
-                            for cb in self.audio_routing_callbacks:
-                                try:
-                                    cb(sink_name)
-                                except Exception as e:
-                                    self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
-                            break
-                except Exception as e:
-                    self.logging.log(LogLevel.Error, f"Failed switching to default audio: {e}")
+                self.audio_router.switch_to_default_audio()
                 
                 success = True
 
@@ -526,6 +1094,38 @@ class BluetoothManager:
         
     def bluetooth_supported(self) -> bool:
         return bool(self.adapter_path)
+    
+    def add_audio_routing_callback(self, callback: Callable[[str], None]) -> None:
+        """Add a callback to be notified when audio routing changes
+        
+        Args:
+            callback: Function to call with the new sink name when routing changes
+        """
+        self.audio_router.register_callback(callback)
+        
+    def remove_audio_routing_callback(self, callback: Callable[[str], None]) -> None:
+        """Remove an audio routing callback
+        
+        Args:
+            callback: Callback function to remove
+        """
+        self.audio_router.unregister_callback(callback)
+    
+    def get_current_audio_sink(self) -> Optional[str]:
+        """Get the currently active audio sink name
+        
+        Returns:
+            Name of current audio sink or None if not available
+        """
+        return self.audio_router.get_current_sink()
+        
+    def restore_last_sink(self) -> bool:
+        """Restore the last used audio sink
+        
+        Returns:
+            True if restoration was successful, False otherwise
+        """
+        return self.audio_router.restore_saved_sink()
 
 
 # Create a global instance of the BluetoothManager
@@ -536,7 +1136,17 @@ def get_bluetooth_manager(logging: Logger) -> BluetoothManager:
     """Get or create the global BluetoothManager instance"""
     global _manager
     if _manager is None:
-        _manager = BluetoothManager(logging)
+        try:
+            _manager = BluetoothManager(logging)
+        except DBusInitError as e:
+            logging.log(LogLevel.Error, f"Failed to initialize BluetoothManager: {e}")
+            # Create a minimal manager that reports no support
+            _manager = BluetoothManager.__new__(BluetoothManager)
+            _manager.logging = logging
+            _manager.adapter = None
+            _manager.adapter_path = None
+            _manager.bus = None
+            _manager.audio_router = AudioRouter(logging)
     return _manager
 
 def add_audio_routing_callback(callback: Callable[[str], None], logging: Logger) -> None:
@@ -547,8 +1157,7 @@ def add_audio_routing_callback(callback: Callable[[str], None], logging: Logger)
         logging: Logger instance
     """
     manager = get_bluetooth_manager(logging)
-    if callback not in manager.audio_routing_callbacks:
-        manager.audio_routing_callbacks.append(callback)
+    manager.add_audio_routing_callback(callback)
 
 def remove_audio_routing_callback(callback: Callable[[str], None], logging: Logger) -> None:
     """Remove an audio routng callback
@@ -558,140 +1167,142 @@ def remove_audio_routing_callback(callback: Callable[[str], None], logging: Logg
         logging: Logger instance
     """
     manager = get_bluetooth_manager(logging)
-    if callback in manager.audio_routing_callbacks:
-        manager.audio_routing_callbacks.remove(callback)
+    manager.remove_audio_routing_callback(callback)
 
 def get_current_audio_sink(logging: Logger) -> Optional[str]:
     """Get the currently active audio sink name
     
     Returns:
-        str :Name of current audio sink or None if not available
+        str: Name of current audio sink or None if not available
     """
-    try:
-        output = subprocess.getoutput("pactl get-default-sink")
-        return output.strip() if output else None
-    except Exception as e:
-        logging.log(LogLevel.Error, f"Failed getting current audio sink: {e}")
-        return None
+    return get_bluetooth_manager(logging).get_current_audio_sink()
 
-def restore_last_sink(logging: Logger):
+def restore_last_sink(logging: Logger) -> bool:
     """Restore the last used audio sink device after startup.
-
-    This function attempts to restore the last used audio sink, typically
-    a Bluetooth device, if one was previously connected.
+    
+    Returns:
+        bool: True if restoration was successful, False otherwise
     """
-    try:
-        # Wait for PA to fully initialize
-        time.sleep(1.0)
-
-        # Get PulseAudio settings directory
-        pa_dir = os.path.expanduser("~/.config/pulse")
-
-        # If the pulse config directory doesn't exist, exit early
-        if not os.path.exists(pa_dir):
-            logging.log(LogLevel.Debug, "No PulseAudio config directory found")
-            return
-
-        # Look for connection config files (specifically the default sink file)
-        default_sink_file = os.path.join(pa_dir, "default-sink")
-
-        if not os.path.exists(default_sink_file):
-            logging.log(LogLevel.Debug, "No default sink file found to restore")
-            return
-
-        try:
-            # Read the saved sink
-            with open(default_sink_file, "r") as f:
-                saved_sink = f.read().strip()
-
-            if not saved_sink:
-                logging.log(LogLevel.Debug, "No saved sink found")
-                return
-
-            # Check if it's a Bluetooth device by name convention
-            if not "bluez" in saved_sink.lower():
-                logging.log(LogLevel.Debug, "Saved sink is not a Bluetooth device")
-                return
-
-            # Get current sinks
-            process = subprocess.run(
-                ["pactl", "list", "sinks", "short"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-
-            # Check for the presence of the saved device in currently available devices
-            current_sinks = process.stdout.splitlines()
-            device_found = False
-
-            for sink in current_sinks:
-                if saved_sink in sink:
-                    device_found = True
-                    break
-
-            if not device_found:
-                logging.log(LogLevel.Info, f"Saved Bluetooth sink '{saved_sink}' not currently available")
-                return
-
-            # Set the sink as default if it was found
-            logging.log(LogLevel.Info, f"Restoring Bluetooth sink: {saved_sink}")
-            subprocess.run(
-                ["pactl", "set-default-sink", saved_sink],
-                check=False
-            )
-            
-            # Update current sink and notify callbacks
-            manager = get_bluetooth_manager(logging)
-            manager.current_audio_sink = saved_sink
-            for callback in manager.audio_routing_callbacks:
-                try:
-                    callback(saved_sink)
-                except Exception as e:
-                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
-
-        except Exception as e:
-            logging.log(LogLevel.Error, f"Error restoring Bluetooth sink: {e}")
-    except Exception as e:
-        # Handle any unexpected errors without crashing
-        logging.log(LogLevel.Error, f"Unexpected error in restore_last_sink: {e}")
-    finally:
-        # Always log completion to help with debugging
-        logging.log(LogLevel.Debug, "Audio sink restoration process completed")
+    return get_bluetooth_manager(logging).restore_last_sink()
 
 
 # Convenience functions using the global manager
 def get_bluetooth_status(logging: Logger) -> bool:
+    """Get Bluetooth power status
+    
+    Args:
+        logging: Logger instance
+    
+    Returns:
+        bool: True if Bluetooth is powered on, False otherwise
+    """
     return get_bluetooth_manager(logging).get_bluetooth_status()
 
 
-def set_bluetooth_power(enabled: bool, logging: Logger) -> None:
-    get_bluetooth_manager(logging).set_bluetooth_power(enabled)
+def set_bluetooth_power(enabled: bool, logging: Logger) -> bool:
+    """Set Bluetooth power state
+    
+    Args:
+        enabled: True to power on, False to power off
+        logging: Logger instance
+        
+    Returns:
+        bool: True if operation was successful, False otherwise
+    """
+    return get_bluetooth_manager(logging).set_bluetooth_power(enabled)
 
 
 def get_devices(logging: Logger) -> List[Dict[str, str]]:
+    """Get list of all known Bluetooth devices
+    
+    Args:
+        logging: Logger instance
+    
+    Returns:
+        List of dictionaries with device information
+    """
     return get_bluetooth_manager(logging).get_devices()
 
 
-def start_discovery(logging: Logger) -> None:
-    get_bluetooth_manager(logging).start_discovery()
+def start_discovery(logging: Logger) -> bool:
+    """Start scanning for Bluetooth devices
+    
+    Args:
+        logging: Logger instance
+    
+    Returns:
+        bool: True if discovery started successfully, False otherwise
+    """
+    return get_bluetooth_manager(logging).start_discovery()
 
 
-def stop_discovery(logging: Logger) -> None:
-    get_bluetooth_manager(logging).stop_discovery()
+def stop_discovery(logging: Logger) -> bool:
+    """Stop scanning for Bluetooth devices
+    
+    Args:
+        logging: Logger instance
+    
+    Returns:
+        bool: True if discovery stopped successfully, False otherwise
+    """
+    return get_bluetooth_manager(logging).stop_discovery()
 
 
 def connect_device(device_path: str, logging: Logger) -> bool:
+    """Connect to a Bluetooth device
+    
+    Args:
+        device_path: D-Bus path of the device
+        logging: Logger instance
+        
+    Returns:
+        bool: True if connection was successful, False otherwise
+    """
     return get_bluetooth_manager(logging).connect_device(device_path)
 
 
 def disconnect_device(device_path: str, logging: Logger) -> bool:
+    """Disconnect from a Bluetooth device
+    
+    Args:
+        device_path: D-Bus path of the device
+        logging: Logger instance
+        
+    Returns:
+        bool: True if disconnection was successful, False otherwise
+    """
     return get_bluetooth_manager(logging).disconnect_device(device_path)
 
 
 # Add async versions to the convenience functions
 def connect_device_async(device_path: str, callback: Callable[[bool], None], logging: Logger) -> None:
+    """Connect to a Bluetooth device asynchronously
+    
+    Args:
+        device_path: D-Bus path of the device
+        callback: Function to call when connection attempt completes with a boolean success parameter
+        logging: Logger instance
+    """
     get_bluetooth_manager(logging).connect_device_async(device_path, callback)
 
 def disconnect_device_async(device_path: str, callback: Callable[[bool], None], logging: Logger) -> None:
+    """Disconnect from a Bluetooth device asynchronously
+    
+    Args:
+        device_path: D-Bus path of the device
+        callback: Function to call when disconnection attempt completes with a boolean success parameter
+        logging: Logger instance
+    """
     get_bluetooth_manager(logging).disconnect_device_async(device_path, callback)
+
+# Check if Bluetooth is supported on this system
+def bluetooth_supported(logging: Logger) -> bool:
+    """Check if Bluetooth is supported on this system
+    
+    Args:
+        logging: Logger instance
+        
+    Returns:
+        bool: True if Bluetooth is supported, False otherwise
+    """
+    return get_bluetooth_manager(logging).bluetooth_supported()

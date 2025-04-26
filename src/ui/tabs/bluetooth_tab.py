@@ -287,30 +287,66 @@ class BluetoothTab(Gtk.Box):
         self.logging.log(LogLevel.Debug, "Bluetooth tab resources cleaned up")
 
     def on_power_switched(self, switch, gparam):
-        """Handle Bluetooth power switch changes
+        \"\"\"Handle Bluetooth power switch changes
 
         Args:
             switch (Gtk.Switch): The power switch widget
             gparam: GObject parameter
-        """
+        \"\"\"
         is_enabled = switch.get_active()
-        set_bluetooth_power(is_enabled, self.logging)
-        # Update UI based on Bluetooth state
+        # Store the original state in case we need to revert
+        original_state = not is_enabled 
+        
+        success = set_bluetooth_power(is_enabled, self.logging)
+
+        if not success:
+            self.logging.log(LogLevel.Error, "Failed to change Bluetooth power state.")
+            # Revert the switch state visually
+            # Use idle_add to ensure UI updates happen on the main thread
+            # and avoid potential signal loop issues
+            def revert_switch():
+                switch.handler_block_by_func(self.on_power_switched)
+                switch.set_active(original_state)
+                switch.handler_unblock_by_func(self.on_power_switched)
+                
+                # Show an error message
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.get_toplevel(),
+                    modal=True,
+                    message_type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text=self.txt.bluetooth_power_failed_title  # Assuming this exists or add it
+                )
+                # Add secondary text if available in translations
+                secondary_text = getattr(self.txt, 'bluetooth_power_failed_message', 
+                                         "Could not change Bluetooth power state. Check system logs or permissions.")
+                dialog.format_secondary_text(secondary_text)
+                dialog.run()
+                dialog.destroy()
+                return False # Important for GLib.idle_add
+
+            GLib.idle_add(revert_switch)
+            return # Stop further processing
+
+        # Update UI based on Bluetooth state (only if successful)
         if is_enabled:
-            # Bluetooth enabled - show scan button
-            self.scan_button.set_visible(True)
+            # Bluetooth enabled - refresh button should be active
+            self.refresh_button.set_sensitive(True)
             # Update device list
             self.update_device_list()
         else:
-            # Bluetooth disabled - hide scan button
-            self.scan_button.set_visible(False)
+            # Bluetooth disabled - refresh button should be disabled
+            self.refresh_button.set_sensitive(False)
             # Clear all devices from the list
-            for child in self.devices_box.get_children():
-                self.devices_box.remove(child)
-            self.devices_box.show_all()
+            try: # Add try-except for safety
+                for child in self.devices_box.get_children():
+                    self.devices_box.remove(child)
+                self.devices_box.show_all()
+            except Exception as e:
+                 self.logging.log(LogLevel.Error, f"Error clearing devices after power off: {e}")
             # If we're discovering, stop it
             if self.is_discovering:
-                self.stop_scan(self.scan_button)
+                self.stop_scan(self.refresh_button)
 
     def on_scan_clicked(self, button):
         """Handle scan button clicks

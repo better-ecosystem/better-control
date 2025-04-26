@@ -202,18 +202,60 @@ class DisplayTab(Gtk.Box):
         settings["gamma"] = temperature
         save_settings(settings, self.logging)
 
-        # Kill any existing gammastep process
-        subprocess.run(
-            ["pkill", "-f", "gammastep"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        # Start new gammastep process with new temperature
-        subprocess.Popen(
-            ["gammastep", "-O", str(temperature)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        # Try to find gammastep or redshift
+        try:
+            # Kill any existing gammastep process
+            subprocess.run(
+                ["pkill", "-f", "gammastep"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            )
+            # Also kill redshift as an alternative
+            subprocess.run(
+                ["pkill", "-f", "redshift"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            )
+            
+            # Check if gammastep is available
+            gammastep_available = subprocess.run(
+                ["which", "gammastep"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            ).returncode == 0
+            
+            # Check if redshift is available as alternative
+            redshift_available = subprocess.run(
+                ["which", "redshift"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            ).returncode == 0
+            
+            if gammastep_available:
+                # Start new gammastep process with new temperature
+                subprocess.Popen(
+                    ["gammastep", "-O", str(temperature)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                self.logging.log(LogLevel.Debug, f"Set blue light temperature to {temperature}K using gammastep")
+            elif redshift_available:
+                # Use redshift as a fallback
+                subprocess.Popen(
+                    ["redshift", "-O", str(temperature)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                self.logging.log(LogLevel.Debug, f"Set blue light temperature to {temperature}K using redshift")
+            else:
+                self.logging.log(LogLevel.Warn, 
+                    "Neither gammastep nor redshift is installed. Blue light filter will not work.")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error setting blue light level: {e}")
 
     def on_bluelight_changed(self, scale):
         """Handle blue light scale changes"""

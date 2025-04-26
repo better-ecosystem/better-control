@@ -26,6 +26,13 @@ from tools.wifi import (
     wifi_supported
 )
 
+# Import the speedtest module
+from tools.speedtest import (
+    SpeedtestRunner, 
+    SpeedtestResult,
+    install_speedtest_cli
+)
+
 class WiFiTab(Gtk.Box):
     """WiFi settings tab"""
 
@@ -48,6 +55,9 @@ class WiFiTab(Gtk.Box):
         # Track tab visibility status
         self.tab_visible = False
 
+        # Initialize speedtest runner
+        self.speedtest_runner = SpeedtestRunner(logging)
+        
         if not wifi_supported:
             self.logging.log(LogLevel.Warn, "WiFi is not supported on this machine")
 
@@ -171,6 +181,130 @@ class WiFiTab(Gtk.Box):
         speed_values_box.pack_start(self.upload_label, False, True, 0)
         content_box.pack_start(speed_values_box, False, True, 0)
 
+        # Speedtest section
+        speedtest_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        speedtest_box.set_margin_top(15)
+        speedtest_box.set_margin_bottom(5)
+        
+        # Speedtest header with button
+        speedtest_header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        speedtest_label = Gtk.Label()
+        speedtest_text = getattr(self.txt, "speedtest_title", "Speed Test")
+        speedtest_label.set_markup(f"<b>{speedtest_text}</b>")
+        speedtest_label.set_halign(Gtk.Align.START)
+        speedtest_header_box.pack_start(speedtest_label, True, True, 0)
+        
+        # Speedtest button
+        self.speedtest_button = Gtk.Button()
+        speedtest_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        speedtest_icon = Gtk.Image.new_from_icon_name("network-transmit-receive-symbolic", Gtk.IconSize.BUTTON)
+        speedtest_button_label = Gtk.Label(label=getattr(self.txt, "run_test", "Run Test"))
+        speedtest_button_box.pack_start(speedtest_icon, False, False, 0)
+        speedtest_button_box.pack_start(speedtest_button_label, False, False, 0)
+        self.speedtest_button.add(speedtest_button_box)
+        self.speedtest_button.connect("clicked", self.on_speedtest_clicked)
+        
+        # Check if speedtest is available, disable button if not
+        if not self.speedtest_runner.speedtest_available():
+            self.speedtest_button.set_tooltip_text("Speedtest CLI not installed")
+            self.speedtest_button.set_sensitive(False)
+        
+        speedtest_header_box.pack_end(self.speedtest_button, False, False, 0)
+        speedtest_box.pack_start(speedtest_header_box, False, True, 0)
+        
+        # Speedtest progress and results
+        self.speedtest_progress_bar = Gtk.ProgressBar()
+        self.speedtest_progress_bar.set_text("Ready")
+        self.speedtest_progress_bar.set_show_text(True)
+        self.speedtest_progress_bar.set_margin_top(5)
+        self.speedtest_progress_bar.set_margin_bottom(5)
+        
+        # Initially hide the progress bar
+        self.speedtest_progress_revealer = Gtk.Revealer()
+        self.speedtest_progress_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        self.speedtest_progress_revealer.set_transition_duration(300)
+        self.speedtest_progress_revealer.add(self.speedtest_progress_bar)
+        self.speedtest_progress_revealer.set_reveal_child(False)
+        speedtest_box.pack_start(self.speedtest_progress_revealer, False, True, 0)
+        
+        # Results grid
+        self.results_grid = Gtk.Grid()
+        self.results_grid.set_column_spacing(15)
+        self.results_grid.set_row_spacing(8)
+        self.results_grid.set_margin_top(5)
+        
+        # Row 0: Download and Upload
+        download_label = Gtk.Label(label=getattr(self.txt, "download", "Download"))
+        download_label.set_halign(Gtk.Align.START)
+        download_label.get_style_context().add_class("dim-label")
+        self.results_grid.attach(download_label, 0, 0, 1, 1)
+        
+        self.download_result_label = Gtk.Label(label="--")
+        self.download_result_label.set_halign(Gtk.Align.START)
+        self.results_grid.attach(self.download_result_label, 1, 0, 1, 1)
+        
+        upload_label = Gtk.Label(label=getattr(self.txt, "upload", "Upload"))
+        upload_label.set_halign(Gtk.Align.START)
+        upload_label.get_style_context().add_class("dim-label")
+        self.results_grid.attach(upload_label, 2, 0, 1, 1)
+        
+        self.upload_result_label = Gtk.Label(label="--")
+        self.upload_result_label.set_halign(Gtk.Align.START)
+        self.results_grid.attach(self.upload_result_label, 3, 0, 1, 1)
+        
+        # Row 1: Ping and Jitter
+        ping_label = Gtk.Label(label=getattr(self.txt, "ping", "Ping"))
+        ping_label.set_halign(Gtk.Align.START)
+        ping_label.get_style_context().add_class("dim-label")
+        self.results_grid.attach(ping_label, 0, 1, 1, 1)
+        
+        self.ping_result_label = Gtk.Label(label="--")
+        self.ping_result_label.set_halign(Gtk.Align.START)
+        self.results_grid.attach(self.ping_result_label, 1, 1, 1, 1)
+        
+        jitter_label = Gtk.Label(label=getattr(self.txt, "jitter", "Jitter"))
+        jitter_label.set_halign(Gtk.Align.START)
+        jitter_label.get_style_context().add_class("dim-label")
+        self.results_grid.attach(jitter_label, 2, 1, 1, 1)
+        
+        self.jitter_result_label = Gtk.Label(label="--")
+        self.jitter_result_label.set_halign(Gtk.Align.START)
+        self.results_grid.attach(self.jitter_result_label, 3, 1, 1, 1)
+        
+        # Row 2: ISP and Server
+        isp_label = Gtk.Label(label=getattr(self.txt, "isp", "ISP"))
+        isp_label.set_halign(Gtk.Align.START)
+        isp_label.get_style_context().add_class("dim-label")
+        self.results_grid.attach(isp_label, 0, 2, 1, 1)
+        
+        self.isp_result_label = Gtk.Label(label="--")
+        self.isp_result_label.set_halign(Gtk.Align.START)
+        self.results_grid.attach(self.isp_result_label, 1, 2, 1, 1)
+        
+        server_label = Gtk.Label(label=getattr(self.txt, "server", "Server"))
+        server_label.set_halign(Gtk.Align.START)
+        server_label.get_style_context().add_class("dim-label")
+        self.results_grid.attach(server_label, 2, 2, 1, 1)
+        
+        self.server_result_label = Gtk.Label(label="--")
+        self.server_result_label.set_halign(Gtk.Align.START)
+        self.results_grid.attach(self.server_result_label, 3, 2, 1, 1)
+        
+        # Initially hide the results grid
+        self.results_revealer = Gtk.Revealer()
+        self.results_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        self.results_revealer.set_transition_duration(300)
+        self.results_revealer.add(self.results_grid)
+        self.results_revealer.set_reveal_child(False)
+        speedtest_box.pack_start(self.results_revealer, False, True, 0)
+        
+        # Add speedtest section to content
+        content_box.pack_start(speedtest_box, False, True, 0)
+        
+        # Register callbacks for speedtest
+        self.speedtest_runner.register_callback(self.on_speedtest_complete)
+        self.speedtest_runner.register_progress_callback(self.on_speedtest_progress)
+
         # Network list section
         networks_label = Gtk.Label()
         wifi_available_text = getattr(self.txt, "wifi_available", "Available Networks")
@@ -212,9 +346,6 @@ class WiFiTab(Gtk.Box):
         # Add action buttons directly to the main container (outside scroll window)
         self.pack_start(action_box, False, True, 0)
 
-        # Initial network list population is now deferred
-        # self.update_network_list()  <- This line is removed
-
         # Store network speed timer ID so we can stop it when tab is hidden
         self.network_speed_timer_id = None
 
@@ -227,26 +358,112 @@ class WiFiTab(Gtk.Box):
         # Connect signals for tab visibility tracking
         self.connect("map", self.on_tab_shown)
         self.connect("unmap", self.on_tab_hidden)
-        
-     # keybinds for wifi tab
-    def on_key_press(self, widget, event):
-        keyval = event.keyval
-        
-        if keyval in (114, 82):
-            if self.power_switch.get_active():
-                #  check if wifi is already loading or not
-                for child in self.networks_box.get_children():
-                    box = child.get_child()
-                    if isinstance(box.get_children()[0], Gtk.Spinner):
-                        self.logging.log(LogLevel.Info, "Already refreshing wifi, skipping")
-                        return True
-                    
-                self.logging.log(LogLevel.Info, "Refreshing wifi networks via keybind")
-                self.load_networks()
-                return True
-            else:
-                self.logging.log(LogLevel.Info, "Unable to refresh, wifi is disabled")
+    
+    def on_speedtest_clicked(self, button):
+        """Handle speedtest button click"""
+        # If speedtest-cli is not available, attempt to install it
+        if not self.speedtest_runner.speedtest_available():
+            self.logging.log(LogLevel.Info, "Speedtest CLI not installed, attempting to install")
+            self.speedtest_button.set_sensitive(False)
+            
+            # Show installing message in progress bar
+            self.speedtest_progress_bar.set_text("Installing speedtest-cli...")
+            self.speedtest_progress_bar.set_fraction(0.1)
+            self.speedtest_progress_revealer.set_reveal_child(True)
+            
+            def install_thread():
+                success = install_speedtest_cli(self.logging)
+                GLib.idle_add(self._handle_speedtest_install_result, success)
                 
+            threading.Thread(target=install_thread, daemon=True).start()
+            return
+            
+        # If speedtest is already running, cancel it
+        if self.speedtest_runner.is_running:
+            self.logging.log(LogLevel.Info, "Cancelling speedtest")
+            self.speedtest_runner.cancel_test()
+            return
+            
+        # Start speedtest
+        self.logging.log(LogLevel.Info, "Starting speedtest")
+        
+        # Update UI
+        self.speedtest_button.get_children()[0].get_children()[1].set_text(getattr(self.txt, "cancel", "Cancel"))
+        self.speedtest_progress_bar.set_text("Initializing...")
+        self.speedtest_progress_bar.set_fraction(0)
+        self.speedtest_progress_revealer.set_reveal_child(True)
+        
+        # Start the test
+        self.speedtest_runner.run_test()
+    
+    def _handle_speedtest_install_result(self, success):
+        """Handle the result of speedtest-cli installation"""
+        if success:
+            self.logging.log(LogLevel.Info, "Speedtest CLI installed successfully")
+            self.speedtest_button.set_sensitive(True)
+            self.speedtest_button.set_tooltip_text("")
+            self.speedtest_progress_bar.set_text("Ready to run test")
+            self.speedtest_progress_bar.set_fraction(1.0)
+            
+            # Hide progress bar after a delay
+            def hide_progress_bar():
+                self.speedtest_progress_revealer.set_reveal_child(False)
+                return False
+                
+            GLib.timeout_add(2000, hide_progress_bar)
+        else:
+            self.logging.log(LogLevel.Error, "Failed to install speedtest-cli")
+            self.speedtest_button.set_sensitive(False)
+            self.speedtest_button.set_tooltip_text("Failed to install speedtest-cli")
+            self.speedtest_progress_bar.set_text("Installation failed")
+            self.speedtest_progress_bar.set_fraction(0)
+            
+        return False  # required for GLib.idle_add
+    
+    def on_speedtest_progress(self, progress, stage):
+        """Handle speedtest progress updates"""
+        GLib.idle_add(self._update_speedtest_progress, progress, stage)
+    
+    def _update_speedtest_progress(self, progress, stage):
+        """Update the speedtest progress bar in the UI thread"""
+        self.speedtest_progress_bar.set_text(stage)
+        self.speedtest_progress_bar.set_fraction(progress / 100.0)
+        return False  # required for GLib.idle_add
+    
+    def on_speedtest_complete(self, result):
+        """Handle speedtest completion"""
+        GLib.idle_add(self._update_speedtest_results, result)
+    
+    def _update_speedtest_results(self, result):
+        """Update the UI with speedtest results in the UI thread"""
+        # Update button text
+        self.speedtest_button.get_children()[0].get_children()[1].set_text(getattr(self.txt, "run_test", "Run Test"))
+        
+        if result.error:
+            self.logging.log(LogLevel.Error, f"Speedtest failed: {result.error}")
+            self.speedtest_progress_bar.set_text(f"Test failed: {result.error}")
+            return False
+            
+        # Update progress bar
+        self.speedtest_progress_bar.set_text("Test completed")
+        self.speedtest_progress_bar.set_fraction(1.0)
+        
+        # Update result labels
+        self.download_result_label.set_text(f"{result.download:.2f} Mbps")
+        self.upload_result_label.set_text(f"{result.upload:.2f} Mbps")
+        self.ping_result_label.set_text(f"{result.ping:.2f} ms")
+        self.jitter_result_label.set_text(f"{result.jitter:.2f} ms")
+        self.isp_result_label.set_text(result.isp)
+        
+        server_text = result.server_name
+        if result.server_location:
+            server_text += f" ({result.server_location})"
+        self.server_result_label.set_text(server_text)
+        
+        # Show results grid
+        self.results_revealer.set_reveal_child(True)
+        
+        return False  # required for GLib.idle_add
 
     def on_tab_shown(self, widget):
         """Handle tab becoming visible"""
@@ -586,10 +803,29 @@ class WiFiTab(Gtk.Box):
         tx_bytes = speed["tx_bytes"]
 
         if self.prev_rx_bytes > 0 and self.prev_tx_bytes > 0:
-            rx_speed = (rx_bytes - self.prev_rx_bytes) / 1024 / 1024  # Convert to Mbps
-            tx_speed = (tx_bytes - self.prev_tx_bytes) / 1024 / 1024  # Convert to Mbps
-            self.download_label.set_text(f"Download: {rx_speed:.1f} Mbps")
-            self.upload_label.set_text(f"Upload: {tx_speed:.1f} Mbps")
+            # Calculate byte difference
+            rx_diff = rx_bytes - self.prev_rx_bytes
+            tx_diff = tx_bytes - self.prev_tx_bytes
+            
+            # Convert bytes to bits (multiply by 8)
+            # Then convert to megabits (divide by 1,000,000)
+            # Since we poll every second, this gives us Mbps
+            rx_speed = (rx_diff * 8) / 1000000
+            tx_speed = (tx_diff * 8) / 1000000
+            
+            # Format based on speed ranges for more readable values
+            if rx_speed < 0.1:
+                download_text = f"Download: {rx_speed * 1000:.1f} Kbps"
+            else:
+                download_text = f"Download: {rx_speed:.1f} Mbps"
+                
+            if tx_speed < 0.1:
+                upload_text = f"Upload: {tx_speed * 1000:.1f} Kbps"
+            else:
+                upload_text = f"Upload: {tx_speed:.1f} Mbps"
+                
+            self.download_label.set_text(download_text)
+            self.upload_label.set_text(upload_text)
 
         self.prev_rx_bytes = rx_bytes
         self.prev_tx_bytes = tx_bytes
@@ -1040,3 +1276,25 @@ class WiFiTab(Gtk.Box):
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"failed to open qr code dialog: {e}")
                     traceback.print_exc()
+
+    def on_key_press(self, widget, event):
+        """Handle key press events in the WiFi tab"""
+        keyval = event.keyval
+        
+        # Key code 114 is 'r', 82 is 'R'
+        if keyval in (114, 82):  # r/R key for refresh
+            if self.power_switch.get_active():
+                # Check if wifi is already loading or not
+                for child in self.networks_box.get_children():
+                    box = child.get_child()
+                    if isinstance(box.get_children()[0], Gtk.Spinner):
+                        self.logging.log(LogLevel.Info, "Already refreshing wifi, skipping")
+                        return True
+                        
+                self.logging.log(LogLevel.Info, "Refreshing wifi networks via keybind")
+                self.update_network_list()
+                return True
+            else:
+                self.logging.log(LogLevel.Info, "Unable to refresh, wifi is disabled")
+                
+        return False  # Allow event propagation for unhandled keys
