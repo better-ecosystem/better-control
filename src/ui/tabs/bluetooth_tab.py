@@ -287,12 +287,12 @@ class BluetoothTab(Gtk.Box):
         self.logging.log(LogLevel.Debug, "Bluetooth tab resources cleaned up")
 
     def on_power_switched(self, switch, gparam):
-        \"\"\"Handle Bluetooth power switch changes
+        """Handle Bluetooth power switch changes
 
         Args:
             switch (Gtk.Switch): The power switch widget
             gparam: GObject parameter
-        \"\"\"
+        """
         is_enabled = switch.get_active()
         # Store the original state in case we need to revert
         original_state = not is_enabled 
@@ -315,7 +315,7 @@ class BluetoothTab(Gtk.Box):
                     modal=True,
                     message_type=Gtk.MessageType.ERROR,
                     buttons=Gtk.ButtonsType.OK,
-                    text=self.txt.bluetooth_power_failed_title  # Assuming this exists or add it
+                    text=getattr(self.txt, 'bluetooth_power_failed_title', "Bluetooth Power Error") # Added default
                 )
                 # Add secondary text if available in translations
                 secondary_text = getattr(self.txt, 'bluetooth_power_failed_message', 

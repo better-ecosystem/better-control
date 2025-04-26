@@ -30,7 +30,7 @@ def emergency_log(message: str, stack: str = "") -> None:
     except:
         pass
 
-from utils.arg_parser import ArgParse
+from utils.arg_parser import parse_args 
 from utils.pair import Pair
 from tools.terminal import term_support_color
 
@@ -49,17 +49,18 @@ def get_current_time():
 
 
 class Logger:
-    def __init__(self, arg_parser: ArgParse) -> None:
+    def __init__(self, arg_parser: dict) -> None:
         log_info: Pair[bool, Optional[str]] = Pair(False, None)
 
-        if arg_parser.find_arg(("-l", "--log")):
+        # Check if log argument is present in the args dictionary
+        if "log" in arg_parser or arg_parser.get('verbose'):
             log_info.first = True
-            log_info.second = arg_parser.option_arg(("-l", "--log"))
+            log_info.second = arg_parser.get('log')
             
         # Check if redaction is enabled via --redact flag
-        self.__should_redact: bool = arg_parser.find_arg(("-r", "--redact"))
+        self.__should_redact: bool = arg_parser.get('redact', False)
 
-        self.__should_log: bool = log_info.first
+        self.__should_log: bool = log_info.first or arg_parser.get('verbose', False)
         self.__log_level: int = (
             int(log_info.second)
             if (log_info.second is not None) and (log_info.second.isdigit())

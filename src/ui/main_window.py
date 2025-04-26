@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 from tools.bluetooth import BluetoothManager
-from utils.arg_parser import ArgParse
+from utils.arg_parser import parse_args
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
@@ -33,7 +33,7 @@ from tools.globals import check_hardware_support
 
 class BetterControl(Gtk.Window):
 
-    def __init__(self, txt: Translation, arg_parser: ArgParse, logging: Logger) -> None:
+    def __init__(self, txt: Translation, arg_parser: dict, logging: Logger) -> None:
         # Initialize cache directory
         self.cache_dir = os.path.expanduser("~/.cache/better-control")
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -74,7 +74,7 @@ class BetterControl(Gtk.Window):
         self.tabs_thread_running = False
 
         # Check if minimal mode is enabled
-        self.minimal_mode = arg_parser.find_arg(("-m", "--minimal"))
+        self.minimal_mode = arg_parser.get('minimal', False)
         if self.minimal_mode:
             self.logging.log(LogLevel.Info, "Minimal mode enabled")
 
@@ -218,21 +218,21 @@ class BetterControl(Gtk.Window):
         requested_tab = tab_order[0] if tab_order else "Volume"
 
         # Override with command-line args if specified
-        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+        if self.arg_parser.get('volume') or self.arg_parser.get('v'):
             requested_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")):
+        elif self.arg_parser.get('wifi'):
             requested_tab = "Wi-Fi"
-        elif self.arg_parser.find_arg(("-a", "--autostart")):
+        elif self.arg_parser.get('autostart'):
             requested_tab = "Autostart"
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+        elif self.arg_parser.get('bluetooth'):
             requested_tab = "Bluetooth"
-        elif self.arg_parser.find_arg(("-B", "--battery")):
+        elif self.arg_parser.get('battery'):
             requested_tab = "Battery"
-        elif self.arg_parser.find_arg(("-d", "--display")):
+        elif self.arg_parser.get('display'):
             requested_tab = "Display"
-        elif self.arg_parser.find_arg(("-p", "--power")):
+        elif self.arg_parser.get('power'):
             requested_tab = "Power"
-        elif self.arg_parser.find_arg(("-u", "--usbguard")):
+        elif self.arg_parser.get('usbguard'):
             requested_tab = "USBGuard"
 
         # Load saved tab visibility settings
@@ -241,21 +241,21 @@ class BetterControl(Gtk.Window):
         # Determine active tab (command line args > first visible)
         active_tab = None
         # Check command line args first
-        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+        if self.arg_parser.get('volume') or self.arg_parser.get('v'):
             active_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")):
+        elif self.arg_parser.get('wifi'):
             active_tab = "Wi-Fi"
-        elif self.arg_parser.find_arg(("-a", "--autostart")):
+        elif self.arg_parser.get('autostart'):
             active_tab = "Autostart"
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+        elif self.arg_parser.get('bluetooth'):
             active_tab = "Bluetooth"
-        elif self.arg_parser.find_arg(("-B", "--battery")):
+        elif self.arg_parser.get('battery'):
             active_tab = "Battery"
-        elif self.arg_parser.find_arg(("-d", "--display")):
+        elif self.arg_parser.get('display'):
             active_tab = "Display"
-        elif self.arg_parser.find_arg(("-p", "--power")):
+        elif self.arg_parser.get('power'):
             active_tab = "Power"
-        elif self.arg_parser.find_arg(("-u", "--usbguard")):
+        elif self.arg_parser.get('usbguard'):
             active_tab = "USBGuard"
         
         # If no args specified, use first visible tab
@@ -298,21 +298,21 @@ class BetterControl(Gtk.Window):
         # Determine active tab (command line args > first visible)
         active_tab = None
         # Check command line args first
-        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+        if self.arg_parser.get('volume') or self.arg_parser.get('v'):
             active_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")):
+        elif self.arg_parser.get('wifi'):
             active_tab = "Wi-Fi"
-        elif self.arg_parser.find_arg(("-a", "--autostart")):
+        elif self.arg_parser.get('autostart'):
             active_tab = "Autostart"
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+        elif self.arg_parser.get('bluetooth'):
             active_tab = "Bluetooth"
-        elif self.arg_parser.find_arg(("-B", "--battery")):
+        elif self.arg_parser.get('battery'):
             active_tab = "Battery"
-        elif self.arg_parser.find_arg(("-d", "--display")):
+        elif self.arg_parser.get('display'):
             active_tab = "Display"
-        elif self.arg_parser.find_arg(("-p", "--power")):
+        elif self.arg_parser.get('power'):
             active_tab = "Power"
-        elif self.arg_parser.find_arg(("-u", "--usbguard")):
+        elif self.arg_parser.get('usbguard'):
             active_tab = "USBGuard"
         
         # If no args specified, use first visible tab
@@ -672,24 +672,21 @@ class BetterControl(Gtk.Window):
                 active_tab = None
 
             # Set active tab based on command line arguments
-            if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
+            if (self.arg_parser.get('volume') or self.arg_parser.get('v')) and "Volume" in self.tab_pages:
                 page_num = self.tab_pages["Volume"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Volume (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Volume"
                 if self.minimal_mode:
                     self.set_title(f"Better Control - Volume")
-            elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
+            elif self.arg_parser.get('wifi') and "Wi-Fi" in self.tab_pages:
                 page_num = self.tab_pages["Wi-Fi"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Wi-Fi (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Wi-Fi"
                 if self.minimal_mode:
                     self.set_title(f"Better Control - Wi-Fi")
-            elif (
-                self.arg_parser.find_arg(("-a", "--autostart"))
-                and "Autostart" in self.tab_pages
-            ):
+            elif self.arg_parser.get('autostart') and "Autostart" in self.tab_pages:
                 page_num = self.tab_pages["Autostart"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Autostart (page {page_num})")
                 self.notebook.set_current_page(page_num)
@@ -697,10 +694,7 @@ class BetterControl(Gtk.Window):
                 if self.minimal_mode:
                     translated_tab_name = self.tab_name_mapping.get("Autostart", "Autostart") if hasattr(self, 'tab_name_mapping') else "Autostart"
                     self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-b", "--bluetooth"))
-                and "Bluetooth" in self.tab_pages
-            ):
+            elif self.arg_parser.get('bluetooth') and "Bluetooth" in self.tab_pages:
                 page_num = self.tab_pages["Bluetooth"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Bluetooth (page {page_num})")
                 self.notebook.set_current_page(page_num)
@@ -708,10 +702,7 @@ class BetterControl(Gtk.Window):
                 if self.minimal_mode:
                     translated_tab_name = self.tab_name_mapping.get("Bluetooth", "Bluetooth") if hasattr(self, 'tab_name_mapping') else "Bluetooth"
                     self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-B", "--battery"))
-                and "Battery" in self.tab_pages
-            ):
+            elif self.arg_parser.get('battery') and "Battery" in self.tab_pages:
                 page_num = self.tab_pages["Battery"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Battery (page {page_num})")
                 self.notebook.set_current_page(page_num)
@@ -719,10 +710,7 @@ class BetterControl(Gtk.Window):
                 if self.minimal_mode:
                     translated_tab_name = self.tab_name_mapping.get("Battery", "Battery") if hasattr(self, 'tab_name_mapping') else "Battery"
                     self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-d", "--display"))
-                and "Display" in self.tab_pages
-            ):
+            elif self.arg_parser.get('display') and "Display" in self.tab_pages:
                 page_num = self.tab_pages["Display"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
                 self.notebook.set_current_page(page_num)
@@ -730,10 +718,7 @@ class BetterControl(Gtk.Window):
                 if self.minimal_mode:
                     translated_tab_name = self.tab_name_mapping.get("Display", "Display") if hasattr(self, 'tab_name_mapping') else "Display"
                     self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-u", "--usbguard"))
-                and "USBGuard" in self.tab_pages
-            ):
+            elif self.arg_parser.get('usbguard') and "USBGuard" in self.tab_pages:
                 page_num = self.tab_pages["USBGuard"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to USBGuard (page {page_num})")
                 self.notebook.set_current_page(page_num)
@@ -741,10 +726,7 @@ class BetterControl(Gtk.Window):
                 if self.minimal_mode:
                     translated_tab_name = self.tab_name_mapping.get("USBGuard", "USBGuard") if hasattr(self, 'tab_name_mapping') else "USBGuard"
                     self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-p", "--power"))
-                and "Power" in self.tab_pages
-            ):
+            elif self.arg_parser.get('power') and "Power" in self.tab_pages:
                 page_num = self.tab_pages["Power"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Power (page {page_num})")
                 self.notebook.set_current_page(page_num)

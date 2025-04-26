@@ -1,0 +1,208 @@
+"""
+Hindi language translation for Better Control
+"""
+
+from translations.translation_manager import TranslationManager
+
+class Hindi:
+    """Hindi language translation for the application"""
+    def __init__(self):
+        # app description
+        self.msg_desc = "लिनक्स के लिए एक सुंदर GTK-थीम वाला नियंत्रण पैनल।"
+
+        # USB notifications
+        self.usb_connected = "{device} जुड़ गया है।"
+        self.usb_disconnected = "{device} डिस्कनेक्ट हुआ।"
+        self.permission_allowed = "USB अनुमति दी गई"
+        self.permission_blocked = "USB अनुमति अवरुद्ध की गई"
+        self.msg_app_url = "https://github.com/quantumvoid0/better-control"
+        self.msg_usage = "उपयोग"
+
+        # for args
+        self.msg_args_help = "यह संदेश प्रिंट करता है"
+        self.msg_args_autostart = "ऑटोस्टार्ट टैब खोलकर शुरू करता है"
+        self.msg_args_battery = "बैटरी टैब खोलकर शुरू करता है"
+        self.msg_args_bluetooth = "ब्लूटूथ टैब खोलकर शुरू करता है"
+        self.msg_args_display = "प्रदर्शन टैब खोलकर शुरू करता है"
+        self.msg_args_force = "एप्लिकेशन को सभी आवश्यकताएँ स्थापित करने के लिए बाध्य करता है"
+        self.msg_args_power = "पावर टैब खोलकर शुरू करता है"
+        self.msg_args_volume = "वॉल्यूम टैब खोलकर शुरू करता है"
+        self.msg_args_volume_v = "वॉल्यूम टैब खोलकर शुरू करता है"
+        self.msg_args_wifi = "वाई-फाई टैब खोलकर शुरू करता है"
+        self.msg_args_log = "प्रोग्राम फ़ाइल पथ दिए जाने पर फ़ाइल में लॉग करेगा,\n या 0 से 3 के बीच के मूल्य दिए जाने पर लॉग स्तर के आधार पर स्टैंडर्ड आउटपुट पर।"
+        self.msg_args_redact = "लॉग से संवेदनशील जानकारी छिपाएँ (नेटवर्क नाम, डिवाइस आईडी, आदि)"
+        self.msg_args_size = "एक कस्टम विंडो आकार सेट करता है"
+
+        # commonly used
+        self.connect = "कनेक्ट करें"
+        self.connected = "कनेक्टेड"
+        self.connecting = "कनेक्ट हो रहा है..."
+        self.disconnect = "डिस्कनेक्ट करें"
+        self.disconnected = "डिस्कनेक्ट किया गया"
+        self.disconnecting = "डिस्कनेक्ट हो रहा है..."
+        self.enable = "सक्षम करें"
+        self.disable = "अक्षम करें"
+        self.close = "बंद करें"
+        self.show = "दिखाएँ"
+        self.loading = "लोड हो रहा है..."
+        self.loading_tabs = "टैब लोड हो रहे हैं..."
+
+        # for tabs
+        self.msg_tab_autostart = "ऑटोस्टार्ट"
+        self.msg_tab_usbguard = "यूएसबी गार्ड"
+        self.usbguard_title = "USB डिवाइस नियंत्रण"
+        self.refresh = "रिफ्रेश करें"
+        self.allow = "अनुमति दें"
+        self.block = "अवरुद्ध करें"
+        self.allowed = "अनुमति प्राप्त"
+        self.blocked = "अवरुद्ध"
+        self.rejected = "अस्वीकृत"
+        self.policy = "नीति देखें"
+        self.usbguard_error = "USBGuard तक पहुँचने में त्रुटि"
+        self.usbguard_not_installed = "USBGuard स्थापित नहीं है"
+        self.usbguard_not_running = "USBGuard सेवा चल नहीं रही है"
+        self.no_devices = "कोई USB डिवाइस कनेक्ट नहीं है"
+        self.operation_failed = "ऑपरेशन विफल रहा"
+        self.policy_error = "नीति लोड करने में विफल"
+        self.permanent_allow = "स्थायी रूप से अनुमति दें"
+        self.permanent_allow_tooltip = "स्थायी रूप से इस डिवाइस को अनुमति दें (नीति में जोड़ें)"
+        self.msg_tab_battery = "बैटरी"
+        self.msg_tab_bluetooth = "ब्लूटूथ"
+        self.msg_tab_display = "प्रदर्शन"
+        self.msg_tab_power = "पावर"
+        self.msg_tab_volume = "वॉल्यूम"
+        self.msg_tab_wifi = "वाई-फाई"
+
+        # Autostart tab translations
+        self.autostart_title = "ऑटोस्टार्ट एप्लिकेशन्स"
+        self.autostart_session = "सेशन"
+        self.autostart_show_system_apps = "सिस्टम ऑटोस्टार्ट एप्लिकेशन्स दिखाएँ"
+        self.autostart_configured_applications = "कॉन्फ़िगर किए गए एप्लिकेशन्स"
+        self.autostart_tooltip_rescan = "ऑटोस्टार्ट ऐप्स पुनः स्कैन करें"
+
+        # Battery tab translations
+        self.battery_title = "बैटरी डैशबोर्ड"
+        self.battery_power_saving = "पावर सेविंग"
+        self.battery_balanced = "संतुलित"
+        self.battery_performance = "परफ़ॉर्मेंस"
+        self.battery_batteries = "बैटरियाँ"
+        self.battery_overview = "अवलोकन"
+        self.battery_details = "विवरण"
+        self.battery_tooltip_refresh = "बैटरी जानकारी रिफ्रेश करें"
+        self.battery_no_batteries = "कोई बैटरी नहीं मिली"
+
+        # Bluetooth tab translations
+        self.bluetooth_title = "ब्लूटूथ डिवाइस"
+        self.bluetooth_scan_devices = "डिवाइस स्कैन करें"
+        self.bluetooth_scanning = "स्कैन हो रहा है..."
+        self.bluetooth_power = "ब्लूटूथ"
+        self.bluetooth_available_devices = "उपलब्ध डिवाइस"
+        self.bluetooth_tooltip_refresh = "डिवाइस स्कैन करें"
+        self.bluetooth_connect_failed = "डिवाइस से कनेक्ट करने में विफल"
+        self.bluetooth_disconnect_failed = "डिवाइस से डिस्कनेक्ट करने में विफल"
+        self.bluetooth_try_again = "कृपया बाद में फिर से प्रयास करें।"
+
+        # Display tab translations
+        self.display_title = "प्रदर्शन सेटिंग्स"
+        self.display_brightness = "स्क्रीन की चमक"
+        self.display_blue_light = "नीली रोशनी"
+        self.display_orientation = "अभिविन्यास"
+        self.display_default = "डिफ़ॉल्ट"
+        self.display_left = "बाएँ"
+        self.display_right = "दाएँ"
+        self.display_inverted = "उलटा"
+        self.display_rotation = "रोटेशन विकल्प"
+        self.display_simple_rotation = "त्वरित रोटेशन"
+        self.display_specific_orientation = "विशिष्ट अभिविन्यास"
+        self.display_flip_controls = "डिस्प्ले फ्लिपिंग"
+        self.display_rotate_cw = "घड़ी की दिशा में घुमाएँ"
+        self.display_rotate_ccw = "घड़ी की विपरीत दिशा में घुमाएँ"
+        self.display_rotation_help = "रोटेशन तुरंत लागू होता है। अगर आप 10 सेकंड में पुष्टि नहीं करते हैं तो यह रीसेट हो जाएगा।"
+
+        # Power tab translations
+        self.power_title = "पावर प्रबंधन"
+        self.power_tooltip_menu = "पावर मेनू कॉन्फ़िगर करें"
+        self.power_menu_buttons = "बटन"
+        self.power_menu_commands = "कमांड्स"
+        self.power_menu_colors = "रंग"
+        self.power_menu_show_hide_buttons = "बटन दिखाएँ/छिपाएँ"
+        self.power_menu_shortcuts_tab_label = "शॉर्टकट"
+        self.power_menu_visibility = "बटन"
+        self.power_menu_keyboard_shortcut = "कीबोर्ड शॉर्टकट"
+        self.power_menu_show_keyboard_shortcut = "कीबोर्ड शॉर्टकट दिखाएँ"
+        self.power_menu_lock = "लॉक"
+        self.power_menu_logout = "लॉगआउट"
+        self.power_menu_suspend = "सस्पेंड"
+        self.power_menu_hibernate = "हाइबरनेट"
+        self.power_menu_reboot = "रीबूट"
+        self.power_menu_shutdown = "शटडाउन"
+        self.power_menu_apply = "लागू करें"
+        self.power_menu_tooltip_lock = "स्क्रीन लॉक करें"
+        self.power_menu_tooltip_logout = "वर्तमान सेशन से लॉगआउट करें"
+        self.power_menu_tooltip_suspend = "सिस्टम को सस्पेंड करें (स्लीप)"
+        self.power_menu_tooltip_hibernate = "सिस्टम को हाइबरनेट करें"
+        self.power_menu_tooltip_reboot = "स्क्रीन को रीस्टार्ट करें"
+        self.power_menu_tooltip_shutdown = "स्क्रीन को बंद करें"
+
+        # Volume tab translations
+        self.volume_title = "वॉल्यूम सेटिंग्स"
+        self.volume_speakers = "स्पीकर्स"
+        self.volume_tab_tooltip = "स्पीकर्स सेटिंग्स"
+        self.volume_output_device = "आउटपुट डिवाइस"
+        self.volume_device = "डिवाइस"
+        self.volume_output = "आउटपुट"
+        self.volume_speaker_volume = "स्पीकर वॉल्यूम"
+        self.volume_mute_speaker = "स्पीकर्स म्यूट करें"
+        self.volume_unmute_speaker = "स्पीकर्स अनम्यूट करें"
+        self.volume_quick_presets = "त्वरित प्रीसेट"
+        self.volume_output_combo_tooltip = "इस एप्लिकेशन के लिए आउटपुट डिवाइस चुनें"
+
+        # Volume tab microphone translations
+        self.microphone_tab_microphone = "माइक्रोफोन"
+        self.microphone_tab_input_device = "इनपुट डिवाइस"
+        self.microphone_tab_volume = "माइक्रोफोन वॉल्यूम"
+        self.microphone_tab_mute_microphone = "माइक्रोफोन म्यूट करें"
+        self.microphone_tab_unmute_microphone = "माइक्रोफोन अनम्यूट करें"
+        self.microphone_tab_tooltip = "माइक्रोफोन सेटिंग्स"
+
+        # Volume tab App output translations
+        self.app_output_title = "ऐप आउटपुट"
+        self.app_output_volume = "एप्लिकेशन आउटपुट वॉल्यूम"
+        self.app_output_mute = "म्यूट"
+        self.app_output_unmute = "अनम्यूट"
+        self.app_output_tab_tooltip = "एप्लिकेशन आउटपुट सेटिंग्स"
+        self.app_output_no_apps = "कोई एप्लिकेशन ऑडियो नहीं चला रहा है"
+        self.app_output_dropdown_tooltip = "इस एप्लिकेशन के लिए आउटपुट डिवाइस चुनें"
+
+        # Volume tab App input translations
+        self.app_input_title = "ऐप इनपुट"
+        self.app_input_volume = "एप्लिकेशन इनपुट वॉल्यूम"
+        self.app_input_mute = "इस एप्लिकेशन के लिए माइक्रोफोन म्यूट करें"
+        self.app_input_unmute = "इस एप्लिकेशन के लिए माइक्रोफोन अनम्यूट करें"
+        self.app_input_tab_tooltip = "एप्लिकेशन माइक्रोफोन सेटिंग्स"
+        self.app_input_no_apps = "कोई एप्लिकेशन माइक्रोफोन का उपयोग नहीं कर रहा है"
+
+        # WiFi tab translations
+        self.wifi_title = "वाई-फाई नेटवर्क"
+        self.wifi_refresh_tooltip = "नेटवर्क रिफ्रेश करें"
+        self.wifi_power = "वाई-फाई"
+        self.wifi_speed = "कनेक्शन स्पीड"
+        self.wifi_download = "डाउनलोड"
+        self.wifi_upload = "अपलोड"
+        self.wifi_available = "उपलब्ध नेटवर्क"
+        self.wifi_forget = "भूल जाएँ"
+        self.wifi_share_title = "नेटवर्क शेयर करें"
+        self.wifi_share_scan = "कनेक्ट करने के लिए स्कैन करें"
+        self.wifi_network_name = "नेटवर्क नाम"
+        self.wifi_password = "पासवर्ड"
+        self.wifi_loading_networks = "नेटवर्क लोड हो रहे हैं..."
+
+        # Settings tab translations
+        self.settings_title = "सेटिंग्स"
+        self.settings_tab_settings = "टैब सेटिंग्स"
+        self.settings_language = "भाषा"
+        self.settings_language_changed_restart = "भाषा परिवर्तन प्रभावी होने के लिए कृपया एप्लिकेशन को पुनः प्रारंभ करें।"
+        self.settings_language_changed = "भाषा बदल दी गई है"
+
+# Register the language with the TranslationManager
+TranslationManager.register_language("hi", Hindi)

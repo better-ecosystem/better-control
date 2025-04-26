@@ -7,11 +7,11 @@ try:
     import importlib.metadata
 except ImportError:
     # Fallback for Python < 3.8
-    import importlib_metadata as importlib
+    import importlib_metadata as importlib # type: ignore
 import gi  # type: ignore
 from setproctitle import setproctitle
 import signal
-from utils.arg_parser import ArgParse
+from utils.arg_parser import parse_args
 from utils.logger import LogLevel, Logger
 from utils.settings import load_settings, ensure_config_dir, save_settings
 from utils.translations import get_translations
@@ -86,18 +86,16 @@ def main():
     os.environ['MALLOC_CHECK_'] = '2'
     os.environ['MALLOC_PERTURB_'] = '0'
 
-    arg_parser = ArgParse(sys.argv)
+    args = parse_args()
 
-    if arg_parser.find_arg(("-h", "--help")):
-        arg_parser.print_help_msg(sys.stdout)
-        sys.exit(0)
+    # Help is already handled in parse_args()
 
-    logger = Logger(arg_parser)
+    logger = Logger(args)
     logger.log(LogLevel.Info, "Starting Better Control")
 
     setup_environment_and_dirs(logger)
 
-    lang, txt = load_language_and_translations(arg_parser, logger)
+    lang, txt = load_language_and_translations(args, logger)
 
     # Deferred loading of animations CSS until after main window is shown
     # load_animations_css()
@@ -109,7 +107,7 @@ def main():
     def check_dependencies_async():
         try:
             if (
-                not arg_parser.find_arg(("-f", "--force"))
+                not args.get('force')
                 and not check_all_dependencies(logger)
             ):
                 logger.log(
@@ -123,7 +121,7 @@ def main():
     threading.Thread(target=check_dependencies_async, daemon=True).start()
 
     try:
-        launch_application(arg_parser, logger, txt)
+        launch_application(args, logger, txt)
     except Exception as e:
         logger.log(LogLevel.Error, f"Fatal error starting application: {e}")
         import traceback
@@ -143,12 +141,12 @@ def setup_environment_and_dirs(logger):
         logger.log(LogLevel.Error, f"Error creating temporary directory: {e}")
 
 
-def load_language_and_translations(arg_parser, logger):
+def load_language_and_translations(args, logger):
     settings = load_settings(logger)
-    available_languages = ["en", "es", "pt", "fr", "id"]
+    available_languages = ["en", "es", "pt", "fr", "id", "hi"]
 
-    if arg_parser.find_arg(("-L", "--lang")):
-        lang = arg_parser.option_arg(("-L", "--lang"))
+    if args.get('lang'):
+        lang = args.get('lang')
         if lang not in available_languages:
             print(f"\033[1;31mError: Invalid language code '{lang}'\033[0m")
             print("Falling back to English (en)")
@@ -177,13 +175,13 @@ def load_language_and_translations(arg_parser, logger):
     return lang, txt
 
 
-def launch_application(arg_parser, logger, txt):
+def launch_application(args, logger, txt):
     import time
 
     time.sleep(0.1)
 
     logger.log(LogLevel.Info, "Creating main window")
-    win = BetterControl(txt, arg_parser, logger)
+    win = BetterControl(txt, args, logger)
     logger.log(LogLevel.Info, "Main window created successfully")
 
     setproctitle("better-control")
@@ -193,19 +191,18 @@ def launch_application(arg_parser, logger, txt):
 
     GLib.idle_add(run_audio_operation)
 
-    option: Any = []
-    if arg_parser.find_arg(("-s", "--size")):
-        optarg = arg_parser.option_arg(("-s", "--size"))
-        if optarg is None or 'x' not in optarg:
+    if args.get('size'):
+        size_option = args.get('size')
+        if 'x' not in size_option:
             logger.log(LogLevel.Error, "Invalid window size")
             sys.exit(1)
         else:
-            option = optarg.split('x')
+            width, height = size_option.split('x')
     else:
-        option = [900, 600]
+        width, height = 900, 600
 
-    win.set_default_size(int(option[0]), int(option[1]))
-    win.resize(int(option[0]), int(option[1]))
+    win.set_default_size(int(width), int(height))
+    win.resize(int(width), int(height))
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
 
@@ -267,17 +264,11 @@ def launch_application(arg_parser, logger, txt):
 
 
 def parse_arguments():
-    arg_parser = ArgParse(sys.argv)
-
-    if arg_parser.find_arg(("-h", "--help")):
-        arg_parser.print_help_msg(sys.stdout)
-        sys.exit(0)
-
-    return arg_parser
+    return parse_args()
 
 
-def setup_logging(arg_parser):
-    logger = Logger(arg_parser)
+def setup_logging(args):
+    logger = Logger(args)
     logger.log(LogLevel.Info, "Starting Better Control")
     return logger
 
@@ -292,12 +283,12 @@ def setup_temp_directory(logger):
         logger.log(LogLevel.Error, f"Error creating temporary directory: {e}")
 
 
-def process_language(arg_parser, logger):
+def process_language(args, logger):
     settings = load_settings(logger)
-    available_languages = ["en", "es", "pt", "fr", "id"]
+    available_languages = ["en", "es", "pt", "fr", "id", "hi"]
 
-    if arg_parser.find_arg(("-L", "--lang")):
-        lang = arg_parser.option_arg(("-L", "--lang"))
+    if args.get('lang'):
+        lang = args.get('lang')
         if lang not in available_languages:
             print(f"\033[1;31mError: Invalid language code '{lang}'\033[0m")
             print("Falling back to English (en)")
@@ -337,11 +328,11 @@ def apply_environment_variables():
     os.environ['MALLOC_PERTURB_'] = '0'
 
 
-def launch_main_window(arg_parser, logger, txt):
+def launch_main_window(args, logger, txt):
     import time
 
     logger.log(LogLevel.Info, "Creating main window")
-    win = BetterControl(txt, arg_parser, logger)
+    win = BetterControl(txt, args, logger)
     logger.log(LogLevel.Info, "Main window created successfully")
 
     setproctitle("better-control")
@@ -351,19 +342,18 @@ def launch_main_window(arg_parser, logger, txt):
 
     GLib.idle_add(run_audio_operation)
 
-    option: Any = []
-    if arg_parser.find_arg(("-s", "--size")):
-        optarg = arg_parser.option_arg(("-s", "--size"))
-        if optarg is None or 'x' not in optarg:
+    if args.get('size'):
+        size_option = args.get('size')
+        if 'x' not in size_option:
             logger.log(LogLevel.Error, "Invalid window size")
             sys.exit(1)
         else:
-            option = optarg.split('x')
+            width, height = size_option.split('x')
     else:
-        option = [900, 600]
+        width, height = 900, 600
 
-    win.set_default_size(int(option[0]), int(option[1]))
-    win.resize(int(option[0]), int(option[1]))
+    win.set_default_size(int(width), int(height))
+    win.resize(int(width), int(height))
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
 
@@ -413,53 +403,6 @@ def launch_main_window(arg_parser, logger, txt):
         sys.exit(1)
 
 
-def initialize_and_start():
-    # Register signals again to be safe
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    apply_environment_variables()
-
-    arg_parser = parse_arguments()
-
-    logger = setup_logging(arg_parser)
-
-    # Check and install pip dependencies early
-    check_and_install_pip_dependencies(logger)
-
-    setup_temp_directory(logger)
-
-    txt = process_language(arg_parser, logger)
-
-    # Asynchronous dependency check to avoid blocking startup
-    import threading
-
-    def check_dependencies_async():
-        try:
-            if (
-                not arg_parser.find_arg(("-f", "--force"))
-                and not check_all_dependencies(logger)
-            ):
-                logger.log(
-                    LogLevel.Error,
-                    "Missing required dependencies. Please install them and try again or use -f to force start.",
-                )
-                # Optionally, show a GTK dialog warning here
-        except Exception as e:
-            logger.log(LogLevel.Error, f"Dependency check error: {e}")
-
-    threading.Thread(target=check_dependencies_async, daemon=True).start()
-
-    try:
-        launch_main_window(arg_parser, logger, txt)
-    except Exception as e:
-        logger.log(LogLevel.Error, f"Fatal error starting application: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
 def check_and_install_pip_dependencies(logger):
     """Checks for and installs pip dependencies from requirements.txt"""
     logger.log(LogLevel.Info, "Checking Python package dependencies...")
@@ -495,6 +438,53 @@ def check_and_install_pip_dependencies(logger):
                 # sys.exit(f"Failed to install required package: {package_name}")
             except Exception as e:
                  logger.log(LogLevel.Error, f"An unexpected error occurred during installation of '{package_name}': {e}")
+
+
+def initialize_and_start():
+    # Register signals again to be safe
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    apply_environment_variables()
+
+    args = parse_arguments()
+
+    logger = setup_logging(args)
+
+    # Check and install pip dependencies early
+    check_and_install_pip_dependencies(logger)
+
+    setup_temp_directory(logger)
+
+    txt = process_language(args, logger)
+
+    # Asynchronous dependency check to avoid blocking startup
+    import threading
+
+    def check_dependencies_async():
+        try:
+            if (
+                not args.get('force')
+                and not check_all_dependencies(logger)
+            ):
+                logger.log(
+                    LogLevel.Error,
+                    "Missing required dependencies. Please install them and try again or use -f to force start.",
+                )
+                # Optionally, show a GTK dialog warning here
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Dependency check error: {e}")
+
+    threading.Thread(target=check_dependencies_async, daemon=True).start()
+
+    try:
+        launch_main_window(args, logger, txt)
+    except Exception as e:
+        logger.log(LogLevel.Error, f"Fatal error starting application: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

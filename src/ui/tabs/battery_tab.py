@@ -187,6 +187,7 @@ class BatteryTab(Gtk.Box):
                 key_mapping = {
                     "vendor": "Manufacturer",
                     "model": "Model",
+                    "serial": "Serial",  # Added serial mapping
                     "state": "State",
                     "warning-level": "Warning Level",
                     "energy": "Energy",
@@ -200,6 +201,7 @@ class BatteryTab(Gtk.Box):
                     "percentage": "Charge",
                     "capacity": "Capacity",
                     "technology": "Technology",
+                    "updated": "Updated",  # Added updated mapping
                 }
 
                 display_key = key_mapping.get(key, key.capitalize())
@@ -325,9 +327,11 @@ class BatteryTab(Gtk.Box):
             "Energy Rate", "Voltage"
         ])
 
+        # Add Serial and Updated to the Details tab
         self.add_info_tab(notebook, self.txt.battery_details, battery_info, [
             "Energy", "Energy Empty", "Energy Full",
-            "Energy Full Design", "Warning Level"
+            "Energy Full Design", "Warning Level",
+            "Serial", "Updated"  # Added Serial and Updated fields
         ])
 
         content_box.pack_start(notebook, True, True, 0)
