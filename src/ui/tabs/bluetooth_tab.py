@@ -212,25 +212,59 @@ class BluetoothTab(Gtk.Box):
         if get_bluetooth_status(self.logging):
             # Add devices
             try:
-                devices = get_devices(self.logging)
-                for device in devices:
-                    # Get battery info for connected devices
-                    if device['connected']:
-                        from tools.bluetooth import get_bluetooth_manager
-                        manager = get_bluetooth_manager(self.logging)
-                        battery = manager.get_device_battery(device['path'])
-                        if battery is not None:
-                            device['battery'] = battery
-                    device_row = BluetoothDeviceRow(device, self.txt)
-                    device_row.connect_button.connect(
-                        "clicked", self.on_connect_clicked, device["path"]
-                    )
-                    device_row.disconnect_button.connect(
-                        "clicked", self.on_disconnect_clicked, device["path"]
-                    )
-                    self.devices_box.pack_start(device_row, False, True, 0)
+                devices_dicts = get_devices(self.logging)
+                self.logging.log(LogLevel.Debug, f"Found {len(devices_dicts)} Bluetooth devices")
+                
+                if not devices_dicts:
+                    # Add a placeholder message when no devices are found
+                    no_devices_label = Gtk.Label(label=getattr(self.txt, "no_bluetooth_devices", "No Bluetooth devices found"))
+                    no_devices_label.get_style_context().add_class("dim-label")
+                    no_devices_label.set_margin_top(10)
+                    no_devices_label.set_margin_bottom(10)
+                    self.devices_box.pack_start(no_devices_label, False, False, 0)
+                else:
+                    # Convert dictionaries to BluetoothDevice objects
+                    from models.bluetooth_device import BluetoothDevice
+                    
+                    for device_dict in devices_dicts:
+                        # Convert dictionary to BluetoothDevice object
+                        device = BluetoothDevice.from_dict(device_dict)
+                        
+                        # Get battery info for connected devices
+                        if device.connected and device.device_path:
+                            from tools.bluetooth import get_bluetooth_manager
+                            manager = get_bluetooth_manager(self.logging)
+                            battery = manager.get_device_battery(device.device_path)
+                            if battery is not None:
+                                device.battery_percentage = battery
+                                
+                        # Create and add device row
+                        device_row = BluetoothDeviceRow(device, self.txt)
+                        device_row.connect_button.connect(
+                            "clicked", self.on_connect_clicked, device.device_path
+                        )
+                        device_row.disconnect_button.connect(
+                            "clicked", self.on_disconnect_clicked, device.device_path
+                        )
+                        self.devices_box.pack_start(device_row, False, True, 0)
+                        
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error populating device list: {e}")
+                import traceback
+                self.logging.log(LogLevel.Debug, traceback.format_exc())
+                
+                # Display error message in the UI
+                error_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+                error_box.set_margin_top(10)
+                
+                error_icon = Gtk.Image.new_from_icon_name("dialog-error-symbolic", Gtk.IconSize.DIALOG)
+                error_box.pack_start(error_icon, False, False, 0)
+                
+                error_label = Gtk.Label(label="Failed to load Bluetooth devices")
+                error_label.get_style_context().add_class("error-text")
+                error_box.pack_start(error_label, False, False, 5)
+                
+                self.devices_box.pack_start(error_box, False, False, 0)
 
         self.devices_box.show_all()
 
@@ -367,14 +401,36 @@ class BluetoothTab(Gtk.Box):
 
         # Start discovery
         try:
-            start_discovery(self.logging)
+            if not start_discovery(self.logging):
+                self.logging.log(LogLevel.Error, "Bluetooth discovery failed to start")
+                # Restore button
+                button.set_sensitive(True)
+                self.refresh_label.set_label("Refresh")
+                self.refresh_revealer.set_reveal_child(False)
+                
+                # Show error to user
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.get_toplevel(),
+                    modal=True,
+                    message_type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text=getattr(self.txt, "bluetooth_scan_failed_title", "Scan Failed")
+                )
+                dialog.format_secondary_text(getattr(self.txt, "bluetooth_scan_failed_message", 
+                                              "Could not start scanning for Bluetooth devices. "
+                                              "Please check if Bluetooth is enabled."))
+                dialog.run()
+                dialog.destroy()
+                return
+                
             self.is_discovering = True
         except Exception as e:
             self.logging.log(
                 LogLevel.Error, f"Failed to start Bluetooth discovery: {e}"
             )
-            button.set_label(self.txt.bluetooth_scan_devices)
             button.set_sensitive(True)
+            self.refresh_label.set_label("Refresh")
+            self.refresh_revealer.set_reveal_child(False)
             return
 
         # Store the start time
@@ -422,27 +478,41 @@ class BluetoothTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "Stopping Bluetooth device scan")
         if not self.is_discovering:
             button.set_sensitive(True)
-            button.set_label(self.txt.bluetooth_scan_devices)
+            self.refresh_label.set_label("Refresh")
+            self.refresh_revealer.set_reveal_child(False)
             return
 
         try:
-            stop_discovery(self.logging)
+            if not stop_discovery(self.logging):
+                self.logging.log(LogLevel.Error, "Failed to stop Bluetooth discovery")
+                # Still mark as not discovering so UI stays consistent
+                self.is_discovering = False
+                # We'll still clean up timers and UI below in finally block
+            else:
+                self.logging.log(LogLevel.Debug, "Bluetooth discovery stopped successfully")
+                self.is_discovering = False
         except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to stop Bluetooth discovery: {e}")
-        finally:
+            self.logging.log(LogLevel.Error, f"Error stopping Bluetooth discovery: {e}")
+            # Mark as not discovering anyway to keep UI consistent
             self.is_discovering = False
+        finally:
+            # Clean up timers regardless of success/failure
             if self.discovery_timeout_id:
                 GLib.source_remove(self.discovery_timeout_id)
                 self.discovery_timeout_id = None
             if self.discovery_check_id:
                 GLib.source_remove(self.discovery_check_id)
                 self.discovery_check_id = None
+                
             # Restore original button appearance with hover behavior
             button.set_sensitive(True)
             self.refresh_label.set_label("Refresh")
             self.refresh_revealer.set_reveal_child(False)
+            
             # Force update the button appearance
             self.refresh_btn_box.queue_draw()
+            
+            # Always update the device list when stopping scan
             self.update_device_list()
 
     def on_connect_clicked(self, button, device_path):
