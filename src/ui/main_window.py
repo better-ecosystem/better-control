@@ -214,58 +214,48 @@ class BetterControl(Gtk.Window):
         # Define tab order from user settings or default
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
 
-        # Default initial tab to first in saved tab order
-        requested_tab = tab_order[0] if tab_order else "Volume"
+        # Determine active tab from command line arguments or settings
+        active_tab = None
 
-        # Override with command-line args if specified
-        if self.arg_parser.get('volume') or self.arg_parser.get('v'):
-            requested_tab = "Volume"
-        elif self.arg_parser.get('wifi'):
-            requested_tab = "Wi-Fi"
-        elif self.arg_parser.get('autostart'):
-            requested_tab = "Autostart"
-        elif self.arg_parser.get('bluetooth'):
-            requested_tab = "Bluetooth"
-        elif self.arg_parser.get('battery'):
-            requested_tab = "Battery"
-        elif self.arg_parser.get('display'):
-            requested_tab = "Display"
-        elif self.arg_parser.get('power'):
-            requested_tab = "Power"
-        elif self.arg_parser.get('usbguard'):
-            requested_tab = "USBGuard"
+        # Use start_tab argument if available (set by arg_parser.py)
+        if 'start_tab' in self.arg_parser and self.arg_parser['start_tab']:
+            # Map the lowercase start_tab value to the actual tab name with proper capitalization
+            start_tab_lower = self.arg_parser['start_tab'].lower()
+            
+            # Create a mapping from lowercase tab names to properly capitalized tab names
+            lowercase_to_proper = {name.lower(): name for name in self.tab_classes.keys()}
+            
+            # Special case handling for tab names with special capitalization
+            lowercase_to_proper['wifi'] = 'Wi-Fi'
+            lowercase_to_proper['usbguard'] = 'USBGuard'
+            
+            # Get the properly capitalized tab name
+            if start_tab_lower in lowercase_to_proper:
+                active_tab = lowercase_to_proper[start_tab_lower]
+                self.logging.log(LogLevel.Info, f"Setting active tab to {active_tab} from start_tab argument '{start_tab_lower}'")
+            else:
+                self.logging.log(LogLevel.Warning, f"Unknown start_tab value: {self.arg_parser['start_tab']}")
 
         # Load saved tab visibility settings
         visibility = self.settings.get("visibility", {})
 
-        # Determine active tab (command line args > first visible)
-        active_tab = None
-        # Check command line args first
-        if self.arg_parser.get('volume') or self.arg_parser.get('v'):
-            active_tab = "Volume"
-        elif self.arg_parser.get('wifi'):
-            active_tab = "Wi-Fi"
-        elif self.arg_parser.get('autostart'):
-            active_tab = "Autostart"
-        elif self.arg_parser.get('bluetooth'):
-            active_tab = "Bluetooth"
-        elif self.arg_parser.get('battery'):
-            active_tab = "Battery"
-        elif self.arg_parser.get('display'):
-            active_tab = "Display"
-        elif self.arg_parser.get('power'):
-            active_tab = "Power"
-        elif self.arg_parser.get('usbguard'):
-            active_tab = "USBGuard"
-        
-        # If no args specified, use first visible tab
+        # If no tab specified by args, use first visible tab
         if active_tab is None:
             visible_tabs = [name for name in tab_order if visibility.get(name, True)]
             if visible_tabs:
                 active_tab = visible_tabs[0]
+                self.logging.log(LogLevel.Info, f"No tab argument provided, using first visible tab: {active_tab}")
+            else:
+                 # Fallback if no tabs are visible (shouldn't normally happen)
+                 active_tab = tab_order[0] if tab_order else None 
+                 self.logging.log(LogLevel.Warning, f"No visible tabs found, defaulting to first tab in order: {active_tab}")
+
+        self.logging.log(LogLevel.Info, f"Selected active tab: {active_tab}")
 
         # Create all tab labels immediately with empty placeholders
+        current_page_to_set = -1
         for tab_name in tab_order:
+            # Only process tabs that should be visible
             if not visibility.get(tab_name, True):
                 continue
                 
@@ -281,52 +271,38 @@ class BetterControl(Gtk.Window):
             self.tabs[tab_name] = placeholder
             self.tab_pages[tab_name] = page_num
             
-            # Load active tab content immediately
+            # Load active tab content immediately and record its page number
             if tab_name == active_tab and tab_name in self.tab_classes:
-                tab_instance = self.tab_classes[tab_name](self.logging, self.txt)
-                tab_instance.show_all()
-                self.notebook.remove_page(page_num)
-                page_num = self.notebook.insert_page(
-                    tab_instance,
-                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
-                    page_num
-                )
-                self.tabs[tab_name] = tab_instance
-                self.tab_pages[tab_name] = page_num
-                self.notebook.set_current_page(page_num)
+                try:
+                    tab_instance = self.tab_classes[tab_name](self.logging, self.txt)
+                    tab_instance.show_all()
+                    self.notebook.remove_page(page_num)
+                    # Insert the real tab at the same position
+                    current_page_to_set = self.notebook.insert_page(
+                        tab_instance,
+                        self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
+                        page_num
+                    )
+                    self.tabs[tab_name] = tab_instance
+                    self.tab_pages[tab_name] = current_page_to_set # Update page number
+                    self.logging.log(LogLevel.Info, f"Loaded active tab {active_tab} at page {current_page_to_set}")
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Failed to load active tab {active_tab}: {e}")
+                    # Keep placeholder if loading fails
+                    current_page_to_set = page_num 
 
-        # Determine active tab (command line args > first visible)
-        active_tab = None
-        # Check command line args first
-        if self.arg_parser.get('volume') or self.arg_parser.get('v'):
-            active_tab = "Volume"
-        elif self.arg_parser.get('wifi'):
-            active_tab = "Wi-Fi"
-        elif self.arg_parser.get('autostart'):
-            active_tab = "Autostart"
-        elif self.arg_parser.get('bluetooth'):
-            active_tab = "Bluetooth"
-        elif self.arg_parser.get('battery'):
-            active_tab = "Battery"
-        elif self.arg_parser.get('display'):
-            active_tab = "Display"
-        elif self.arg_parser.get('power'):
-            active_tab = "Power"
-        elif self.arg_parser.get('usbguard'):
-            active_tab = "USBGuard"
+        # Set the active tab in the notebook *after* all placeholders are added
+        if current_page_to_set != -1:
+            self.notebook.set_current_page(current_page_to_set)
+            # Trigger lazy load for the active tab if it wasn't loaded immediately (e.g., due to error)
+            if isinstance(self.tabs.get(active_tab), Gtk.Box):
+                 GLib.idle_add(lambda: self.lazy_load_tab(self.notebook, None, current_page_to_set))
+            self.logging.log(LogLevel.Info, f"Set current page to {current_page_to_set} for tab {active_tab}")
+        elif self.notebook.get_n_pages() > 0:
+             # Fallback if active tab wasn't found or loaded
+             self.notebook.set_current_page(0)
+             self.logging.log(LogLevel.Warning, f"Could not set active tab {active_tab}, defaulting to page 0")
         
-        # If no args specified, use first visible tab
-        if active_tab is None:
-            visible_tabs = [name for name in tab_order if visibility.get(name, True)]
-            if visible_tabs:
-                active_tab = visible_tabs[0]
-
-        # Load active tab immediately if found
-        if active_tab and active_tab in self.tab_pages:
-            page_num = self.tab_pages[active_tab]
-            self.notebook.set_current_page(page_num)
-            GLib.idle_add(lambda: self.lazy_load_tab(self.notebook, None, page_num))
-
         # Connect switch-page to lazy load other tabs
         self.notebook.connect("switch-page", self.lazy_load_tab)
 
