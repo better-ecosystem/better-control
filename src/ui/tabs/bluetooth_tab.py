@@ -113,12 +113,13 @@ class BluetoothTab(Gtk.Box):
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll_window.set_vexpand(True)
 
-        # Create main content box
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        content_box.set_margin_top(10)
-        content_box.set_margin_bottom(10)
-        content_box.set_margin_start(10)
-        content_box.set_margin_end(10)
+        # Create main content box with improved margins and spacing
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)  # Increased from 10
+        content_box.set_margin_top(16)    # Increased from 10 
+        content_box.set_margin_bottom(16) # Increased from 10
+        content_box.set_margin_start(16)  # Increased from 10
+        content_box.set_margin_end(16)    # Increased from 10
+        content_box.get_style_context().add_class("content-container")  # Add our new CSS class
 
         # Bluetooth power switch
         power_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -343,17 +344,21 @@ class BluetoothTab(Gtk.Box):
                 switch.set_active(original_state)
                 switch.handler_unblock_by_func(self.on_power_switched)
                 
-                # Show an error message
+                # Show a more informative error message
                 dialog = Gtk.MessageDialog(
                     transient_for=self.get_toplevel(),
                     modal=True,
                     message_type=Gtk.MessageType.ERROR,
                     buttons=Gtk.ButtonsType.OK,
-                    text=getattr(self.txt, 'bluetooth_power_failed_title', "Bluetooth Power Error") # Added default
+                    text=getattr(self.txt, 'bluetooth_power_failed_title', "Bluetooth Power Error")
                 )
-                # Add secondary text if available in translations
+                # Add detailed secondary text
                 secondary_text = getattr(self.txt, 'bluetooth_power_failed_message', 
-                                         "Could not change Bluetooth power state. Check system logs or permissions.")
+                                         "Could not change Bluetooth power state. Possible reasons:\n"
+                                         "- Permissions issue (user might need to be in the 'rfkill' group).\n"
+                                         "- Hardware switch or airplane mode is blocking Bluetooth.\n"
+                                         "- Bluetooth service (bluez) not running properly.\n\n"
+                                         "Check system logs for more details.")
                 dialog.format_secondary_text(secondary_text)
                 dialog.run()
                 dialog.destroy()

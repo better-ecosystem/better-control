@@ -278,10 +278,10 @@ class PowerTab(Gtk.Box):
             "commands": {
                 "lock": "loginctl lock-session",
                 "logout": "loginctl terminate-user $USER",
-                "suspend": "systemctl suspend",
-                "hibernate": "systemctl hibernate",
-                "reboot": "systemctl reboot",
-                "shutdown": "systemctl poweroff"
+                "suspend": "loginctl suspend",  # Changed from systemctl
+                "hibernate": "loginctl hibernate", # Changed from systemctl
+                "reboot": "loginctl reboot",   # Changed from systemctl
+                "shutdown": "loginctl poweroff" # Changed from systemctl
             },
             "colors": {
                 "lock": "#4A90D9",
@@ -296,33 +296,28 @@ class PowerTab(Gtk.Box):
         }
 
         try:
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
-
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
-                    settings = json.load(f)
-
-                    # Ensure commands exist in settings
-                    if "commands" not in settings:
-                        settings["commands"] = default_settings["commands"]
-
-                    # Ensure shortcuts exist in settings
-                    if "shortcuts" not in settings:
-                        settings["shortcuts"] = default_settings["shortcuts"]
-
-                    # Ensure show_keybinds exists in settings
-                    if "show_keybinds" not in settings:
-                        settings["show_keybinds"] = default_settings["show_keybinds"]
-
-                    return settings
+                    loaded_settings = json.load(f)
+                    # Merge loaded settings with defaults, ensuring all keys exist
+                    for key, default_value in default_settings.items():
+                        if key not in loaded_settings:
+                            loaded_settings[key] = default_value
+                        elif isinstance(default_value, dict):
+                            # Merge dictionaries (commands, colors, shortcuts)
+                            for sub_key, sub_default_value in default_value.items():
+                                if sub_key not in loaded_settings[key]:
+                                    loaded_settings[key][sub_key] = sub_default_value
+                    return loaded_settings
             else:
-                # Create default settings file
+                # Ensure config directory exists
+                os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+                # Save default settings if file doesn't exist
                 with open(self.config_file, 'w') as f:
-                    json.dump(default_settings, f, indent=2)
+                    json.dump(default_settings, f, indent=4)
                 return default_settings
         except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to load power settings: {e}")
+            self.logging.log(LogLevel.Error, f"Error loading power settings: {e}")
             return default_settings
 
     def _save_settings(self):
@@ -577,10 +572,10 @@ class PowerTab(Gtk.Box):
                     defaults_map = {
                         "lock": "loginctl lock-session",
                         "logout": "loginctl terminate-user $USER",
-                        "suspend": "systemctl suspend",
-                        "hibernate": "systemctl hibernate",
-                        "reboot": "systemctl reboot",
-                        "shutdown": "systemctl poweroff",
+                        "suspend": "loginctl suspend",
+                        "hibernate": "loginctl hibernate",
+                        "reboot": "loginctl reboot",
+                        "shutdown": "loginctl poweroff",
                     }
                     default_cmd = defaults_map.get(option_id, "")
 
@@ -935,7 +930,7 @@ class PowerTab(Gtk.Box):
 
     def on_suspend_clicked(self, widget):
         """Handle suspend button click"""
-        command = self.custom_commands.get("suspend", "systemctl suspend")
+        command = self.custom_commands.get("suspend", "loginctl suspend")
         self.logging.log(LogLevel.Info, f"Suspend button clicked, running: {command}")
         self._execute_command(command)
         # Close application after executing command
@@ -943,7 +938,7 @@ class PowerTab(Gtk.Box):
 
     def on_hibernate_clicked(self, widget):
         """Handle hibernate button click"""
-        command = self.custom_commands.get("hibernate", "systemctl hibernate")
+        command = self.custom_commands.get("hibernate", "loginctl hibernate")
         self.logging.log(LogLevel.Info, f"Hibernate button clicked, running: {command}")
         self._execute_command(command)
         # Close application after executing command
@@ -951,7 +946,7 @@ class PowerTab(Gtk.Box):
 
     def on_reboot_clicked(self, widget):
         """Handle reboot button click"""
-        command = self.custom_commands.get("reboot", "systemctl reboot")
+        command = self.custom_commands.get("reboot", "loginctl reboot")
         self.logging.log(LogLevel.Info, f"Reboot button clicked, running: {command}")
         self._execute_command(command)
         # Close application after executing command
@@ -959,7 +954,7 @@ class PowerTab(Gtk.Box):
 
     def on_shutdown_clicked(self, widget):
         """Handle shutdown button click"""
-        command = self.custom_commands.get("shutdown", "systemctl poweroff")
+        command = self.custom_commands.get("shutdown", "loginctl poweroff")
         self.logging.log(LogLevel.Info, f"Shutdown button clicked, running: {command}")
         self._execute_command(command)
         # Close application after executing command

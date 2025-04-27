@@ -136,11 +136,12 @@ class WiFiTab(Gtk.Box):
         scroll_window.set_vexpand(True)
 
         # Create main content box
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        content_box.set_margin_top(10)
-        content_box.set_margin_bottom(10)
-        content_box.set_margin_start(10)
-        content_box.set_margin_end(10)
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)  # Increased from 10
+        content_box.set_margin_top(16)    # Increased from 10
+        content_box.set_margin_bottom(16) # Increased from 10
+        content_box.set_margin_start(16)  # Increased from 10
+        content_box.set_margin_end(16)    # Increased from 10
+        content_box.get_style_context().add_class("content-container")  # Add our new CSS class
 
         # WiFi power switch
         power_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)

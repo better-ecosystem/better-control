@@ -8,6 +8,10 @@ def get_animations_css_path():
     """Returns the absolute path to the animations CSS file"""
     return os.path.join(os.path.dirname(__file__), "animations.css")
 
+def get_spacing_css_path():
+    """Returns the absolute path to the spacing CSS file"""
+    return os.path.join(os.path.dirname(__file__), "spacing.css")
+
 def animate_widget_show(widget, duration=250):
     """
     Animate widget appearance using CSS transitions with fade-in effect
@@ -176,27 +180,46 @@ def load_animations_css():
         The CSS provider object or None on failure
     """
     try:
-        css_provider = Gtk.CssProvider()
-        css_path = get_animations_css_path()
+        # Load animations CSS
+        css_provider_animations = Gtk.CssProvider()
+        css_path_animations = get_animations_css_path()
         
-        if not os.path.exists(css_path):
-            logging.error(f"CSS file not found: {css_path}")
+        if not os.path.exists(css_path_animations):
+            logging.error(f"CSS file not found: {css_path_animations}")
             return None
             
-        css_provider.load_from_path(css_path)
+        css_provider_animations.load_from_path(css_path_animations)
+
+        # Load spacing CSS
+        css_provider_spacing = Gtk.CssProvider()
+        css_path_spacing = get_spacing_css_path()
+        
+        if not os.path.exists(css_path_spacing):
+            logging.warning(f"Spacing CSS file not found: {css_path_spacing}")
+        else:
+            css_provider_spacing.load_from_path(css_path_spacing)
 
         screen = Gdk.Screen.get_default()
         if screen is not None:
+            # Add animations CSS
             Gtk.StyleContext.add_provider_for_screen(
                 screen,
-                css_provider,
+                css_provider_animations,
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
+            
+            # Add spacing CSS with higher priority
+            if os.path.exists(css_path_spacing):
+                Gtk.StyleContext.add_provider_for_screen(
+                    screen,
+                    css_provider_spacing,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 10  # Higher priority
+                )
         else:
             logging.warning("No display available for CSS animations")
             return None
             
-        return css_provider
+        return css_provider_animations
     except Exception as e:
         logging.error(f"Could not load CSS animations: {str(e)}")
         return None

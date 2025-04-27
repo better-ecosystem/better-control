@@ -100,18 +100,36 @@ class BluetoothctlService(BluetoothService):
         return self.parser.parse_power_state(output)
         
     def set_power_state(self, state: bool) -> bool:
-        """Set the power state of the Bluetooth adapter."""
-        command = "power on" if state else "power off"
-        output = self._run_command(command)
-        
-        # Invalidate cache after changing power state
-        self.invalidate_cache("show")
-        
-        # Check if the command was successful
-        if state:
-            return "Changing power on succeeded" in output
-        else:
-            return "Changing power off succeeded" in output
+        """Set the power state of the Bluetooth adapter using rfkill."""
+        action = "unblock" if state else "block"
+        command = f"rfkill {action} bluetooth"
+        try:
+            self.logging.log(LogLevel.Info, f"Attempting to set Bluetooth power state using: {command}")
+            # Use subprocess.run for better error handling
+            result = subprocess.run(
+                command.split(), 
+                check=True, 
+                capture_output=True, 
+                text=True
+            )
+            self.logging.log(LogLevel.Debug, f"rfkill command output: {result.stdout}")
+            # Invalidate cache after potentially changing power state
+            self.invalidate_cache("show") # Keep checking state via bluetoothctl for now
+            return True
+        except FileNotFoundError:
+            self.logging.log(LogLevel.Error, "rfkill command not found. Cannot change Bluetooth power state.")
+            return False
+        except subprocess.CalledProcessError as e:
+            self.logging.log(LogLevel.Error, f"rfkill command failed: {e.stderr}")
+            # Attempt to provide a more helpful message based on common rfkill errors
+            if "Operation not possible due to RF-kill" in e.stderr:
+                 self.logging.log(LogLevel.Warning, "Bluetooth state might be blocked by hardware switch or airplane mode.")
+            elif "Permission denied" in e.stderr:
+                 self.logging.log(LogLevel.Error, "Permission denied for rfkill. User might need specific group membership (e.g., rfkill group).")
+            return False
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"An unexpected error occurred while running rfkill: {e}")
+            return False
         
     def get_devices(self) -> List[BluetoothDevice]:
         """Get list of known Bluetooth devices."""
