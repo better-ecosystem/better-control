@@ -412,7 +412,7 @@ Status: {status_text}
                 # Temporary allow button with internal label animation
                 allow_btn = Gtk.Button()
                 allow_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                allow_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                allow_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.BUTTON)
                 allow_btn_box.pack_start(allow_icon, False, False, 0)
                 allow_label = Gtk.Label(label=get_translations().allow)
                 allow_revealer = Gtk.Revealer()
@@ -433,7 +433,7 @@ Status: {status_text}
                 # Permanent allow button with internal label animation
                 perm_allow_btn = Gtk.Button()
                 perm_allow_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                perm_allow_icon = Gtk.Image.new_from_icon_name("emblem-default-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                perm_allow_icon = Gtk.Image.new_from_icon_name("emblem-default-symbolic", Gtk.IconSize.BUTTON)
                 perm_allow_btn_box.pack_start(perm_allow_icon, False, False, 0)
                 perm_allow_label = Gtk.Label(label=get_translations().permanent_allow)
                 perm_allow_revealer = Gtk.Revealer()
@@ -454,7 +454,7 @@ Status: {status_text}
                 # Block button with internal label animation
                 block_btn = Gtk.Button()
                 block_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                block_icon = Gtk.Image.new_from_icon_name("action-unavailable-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                block_icon = Gtk.Image.new_from_icon_name("action-unavailable-symbolic", Gtk.IconSize.BUTTON)
                 block_btn_box.pack_start(block_icon, False, False, 0)
                 block_label = Gtk.Label(label=get_translations().block)
                 block_revealer = Gtk.Revealer()
