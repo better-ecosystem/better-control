@@ -343,33 +343,42 @@ def forget_network(ssid: str, logging: Logger) -> bool:
 
 
 def get_network_speed(logging: Logger) -> Dict[str, float]:
-    """Get current network speed
-
-    Returns:
-        Dict[str, float]: Dictionary with upload and download speeds in Mbps
-    """
     try:
-        # Get WiFi interface name
-        result = subprocess.run(
-            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
-            capture_output=True,
-            text=True,
-        )
-        output = result.stdout
-        wifi_lines = [line for line in output.split("\n") if "wifi" in line]
+        # Get network interfaces for wifi and ethernett
+        interfaces_output = subprocess.getoutput(
+            "nmcli -t -f DEVICE,TYPE device | grep -E 'wifi|ethernet'"
+        ).split("\n")
+        wifi_interfaces = [line.split(":")[0] for line in interfaces_output if "wifi" in line and ":" in line]
+        ethernet_interfaces = [line.split(":")[0] for line in interfaces_output if "ethernet" in line and ":" in line]
 
-        if not wifi_lines:
-            # Return zeros with the expected keys when WiFi is not supported
-            logging.log(LogLevel.Warn, "WiFi is not supported on this machine")
+
+        def is_interface_up(interface: str) -> bool:
+            operstate = subprocess.getoutput(f"cat /sys/class/net/{interface}/operstate").strip()
+            return operstate == "up"
+
+        interface = None
+        for iface in wifi_interfaces:
+            if is_interface_up(iface):
+                interface = iface
+                break
+
+        if interface is None:
+            for iface in ethernet_interfaces:
+                if is_interface_up(iface):
+                    interface = iface
+                    break
+
+        if interface is None:
             return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}
 
-        interface = wifi_lines[0].split(":")[0]
 
-        # Get current bytes
-        with open(f"/sys/class/net/{interface}/statistics/rx_bytes") as f:
-            rx_bytes = int(f.read())
-        with open(f"/sys/class/net/{interface}/statistics/tx_bytes") as f:
-            tx_bytes = int(f.read())
+        rx_bytes = int(
+            subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/rx_bytes")
+        )
+        tx_bytes = int(
+            subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/tx_bytes")
+        )
+
         return {"rx_bytes": rx_bytes, "tx_bytes": tx_bytes, "wifi_supported": True}
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting network speed: {e}")

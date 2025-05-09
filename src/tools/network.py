@@ -13,25 +13,39 @@ def get_network_speed(logging: Logger) -> Tuple[float, float]:
         Tuple[float, float]: Upload and download speeds in Mbps
     """
     try:
-        # Get network interfaces
-        interfaces = subprocess.getoutput(
-            "nmcli -t -f DEVICE,TYPE device | grep wifi"
+        # Get network interfaces for wifi and ethernet
+        interfaces_output = subprocess.getoutput(
+            "nmcli -t -f DEVICE,TYPE device | grep -E 'wifi|ethernet'"
         ).split("\n")
-        wifi_interfaces = [line.split(":")[0] for line in interfaces if ":" in line]
+        logging.log(LogLevel.Debug, f"Interfaces output: {interfaces_output}")
+        wifi_interfaces = [line.split(":")[0] for line in interfaces_output if "wifi" in line and ":" in line]
+        ethernet_interfaces = [line.split(":")[0] for line in interfaces_output if "ethernet" in line and ":" in line]
+        logging.log(LogLevel.Debug, f"WiFi interfaces: {wifi_interfaces}")
+        logging.log(LogLevel.Debug, f"Ethernet interfaces: {ethernet_interfaces}")
 
-        if not wifi_interfaces:
+        if wifi_interfaces:
+            interface = wifi_interfaces[0]
+        elif ethernet_interfaces:
+            interface = ethernet_interfaces[0]
+        else:
+            logging.log(LogLevel.Debug, "No wifi or ethernet interfaces found")
             return 0.0, 0.0
 
-        # Use the first Wi-Fi interface for simplicity
-        interface = wifi_interfaces[0]
+        logging.log(LogLevel.Debug, f"Using interface: {interface}")
 
-        # Get current transmit and receive bytes
+        operstate = subprocess.getoutput(f"cat /sys/class/net/{interface}/operstate").strip()
+        logging.log(LogLevel.Debug, f"Interface {interface} operstate: {operstate}")
+        if operstate != "up":
+            logging.log(LogLevel.Debug, f"Interface {interface} is not up")
+            return 0.0, 0.0
+
         rx_bytes = int(
             subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/rx_bytes")
         )
         tx_bytes = int(
             subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/tx_bytes")
         )
+        logging.log(LogLevel.Debug, f"rx_bytes: {rx_bytes}, tx_bytes: {tx_bytes}")
 
         # Store current values
         if not hasattr(get_network_speed, "prev_rx_bytes"):

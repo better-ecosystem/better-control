@@ -586,15 +586,17 @@ class WiFiTab(Gtk.Box):
         tx_bytes = speed["tx_bytes"]
 
         if self.prev_rx_bytes > 0 and self.prev_tx_bytes > 0:
-            rx_speed = (rx_bytes - self.prev_rx_bytes) / 1024 / 1024  # Convert to Mbps
-            tx_speed = (tx_bytes - self.prev_tx_bytes) / 1024 / 1024  # Convert to Mbps
+            rx_speed = ((rx_bytes - self.prev_rx_bytes) * 8) / (1024 * 1024) 
+            tx_speed = ((tx_bytes - self.prev_tx_bytes) * 8) / (1024 * 1024)  
             self.download_label.set_text(f"Download: {rx_speed:.1f} Mbps")
             self.upload_label.set_text(f"Upload: {tx_speed:.1f} Mbps")
+            while Gtk.events_pending():
+                Gtk.main_iteration()
 
         self.prev_rx_bytes = rx_bytes
         self.prev_tx_bytes = tx_bytes
 
-        return True  # Continue the timer
+        return True  
 
     def on_power_switched(self, switch, gparam):
         """Handle WiFi power switch toggle"""
