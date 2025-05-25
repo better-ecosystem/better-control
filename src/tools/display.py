@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-
+import os
 import subprocess
 from typing import Dict, List
 
 from utils.logger import LogLevel, Logger
 from tools.globals import get_current_session
 from tools.hyprland import get_hyprland_displays, set_hyprland_transform
+
+BACKLIGHT_DIR = "/sys/class/backlight"
+_device = os.listdir(BACKLIGHT_DIR)[0]
+BRIGHTNESS_FILE = os.path.join(BACKLIGHT_DIR, _device, "brightness")
+MAX_BRIGHTNESS = int(
+            open(os.path.join(BACKLIGHT_DIR, _device, "max_brightness")).read().strip()
+        )
+
 
 def get_brightness(logging: Logger) -> int:
     """Get the current brightness level
@@ -14,10 +22,10 @@ def get_brightness(logging: Logger) -> int:
         int: current brightness percentage
     """
     try:
-        output = subprocess.getoutput("brightnessctl g")
-        max_brightness = int(subprocess.getoutput("brightnessctl m"))
-        current_brightness = int(output)
-        return int((current_brightness / max_brightness) * 100)
+        current_brightness = int(
+            open(os.path.join(BACKLIGHT_DIR, _device, "brightness")).read().strip()
+        )    
+        return int((current_brightness / MAX_BRIGHTNESS) * 100)
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting brightness: {e}")
         return 0
@@ -30,7 +38,23 @@ def set_brightness(value: int, logging: Logger) -> None:
         value (int): brightness percentage to set
     """
     try:
-        subprocess.run(["brightnessctl", "s", f"{value}%"], check=True, stdout=subprocess.DEVNULL)
+        current_brightness = int(
+            open(os.path.join(BACKLIGHT_DIR, _device, "brightness")).read().strip()
+        )    
+        value = int((value / 100) * MAX_BRIGHTNESS)
+        cmd = [
+                "busctl",
+                "call",
+                "org.freedesktop.login1",
+                "/org/freedesktop/login1/session/auto",
+                "org.freedesktop.login1.Session",
+                "SetBrightness",
+                "ssu",
+                "backlight",
+                _device,
+                f"{value}"
+            ]
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL) #No need for brightnessctl
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed setting brightness: {e}")
 
