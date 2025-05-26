@@ -49,6 +49,27 @@ def get_wifi_css():
             border-top-left-radius: 0px;
             padding: 10px;
         }
+        .ip-address-box, .dns-box, .gateway-box, .security-type-box, .public-ip-box {
+            background: @wm_button_unfocused_bg;
+            border-radius: 6px;
+            border-bottom-right-radius: 0px;
+            border-bottom-left-radius: 0px;
+            padding: 10px;
+        }
+        .dns-box {
+            border-top-right-radius: 0px;
+            border-top-left-radius: 0px;
+        }
+        .gateway-box {
+            border-top-right-radius: 0px;
+            border-top-left-radius: 0px;
+        }
+        .public-ip-box {
+            border-top-right-radius: 0px;
+            border-top-left-radius: 0px;
+            border-bottom-right-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
     """)
     
     Gtk.StyleContext.add_provider_for_screen(

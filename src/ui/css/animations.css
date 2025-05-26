@@ -12,8 +12,13 @@
 
 /* Fade-in animation */
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .fade-in {
@@ -33,7 +38,7 @@ notebook tab:checked {
 }
 
 /* Content area padding */
-notebook > stack {
+notebook>stack {
     padding: 12px;
 }
 
@@ -43,25 +48,27 @@ notebook > stack {
     -gtk-icon-transform: rotate(0deg);
 }
 
-.rotate-gear-active{
+.rotate-gear-active {
     -gtk-icon-transform: rotate(360deg);
     transition: all 600ms ease;
 }
 
 @keyframes pulse {
     0% {
-     -gtk-icon-transform: scale(1);
-      opacity: 1;
+        -gtk-icon-transform: scale(1);
+        opacity: 1;
     }
+
     50% {
-     -gtk-icon-transform: scale(1.05);
-      opacity: 0.8;
+        -gtk-icon-transform: scale(1.05);
+        opacity: 0.8;
     }
+
     100% {
-     -gtk-icon-transform: scale(1);
-      opacity: 1;
+        -gtk-icon-transform: scale(1);
+        opacity: 1;
     }
-  }
+}
 
 
 .volume-icon-animate {
@@ -176,7 +183,7 @@ expander {
     margin-left: 4px;
     padding: 1px 4px;
     border-radius: 3px;
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .connection-indicator {
@@ -187,12 +194,14 @@ expander {
 }
 
 .connection-indicator.connected {
-    background-color: #2ecc71; /* Green */
+    background-color: #2ecc71;
+    /* Green */
     box-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
 }
 
 .connection-indicator.disconnected {
-    background-color: #e74c3c; /* Red */
+    background-color: #e74c3c;
+    /* Red */
 }
 
 .status-label {
@@ -217,12 +226,34 @@ expander {
 
 /* Battery level animations */
 @keyframes battery-pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
 .low-battery {
     animation: battery-pulse 2s infinite;
     color: #e74c3c;
+}
+
+/* added on ui_imporvements branch */
+.network-list {
+    border-radius: 12px;
+}
+
+.properties-button {
+    background-color: transparent;
+    color: white;
+}
+
+.network-separator {
+    background-color: white;
 }

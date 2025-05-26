@@ -153,28 +153,19 @@ class WiFiTab(Gtk.Box):
 
         network_info_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
         network_info_box.set_halign(Gtk.Align.START)
+        
+        network_info_box_botton = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        network_info_box_botton.set_halign(Gtk.Align.START)
 
         self.ip_label = Gtk.Label(label="IP Address: N/A")
         self.ip_label.set_halign(Gtk.Align.START)
 
-        self.dns_label = Gtk.Label(label="DNS: N/A")
-        self.dns_label.set_halign(Gtk.Align.START)
-
-        self.gateway_label = Gtk.Label(label="Gateway: N/A")
-        self.gateway_label.set_halign(Gtk.Align.START)
-
         network_info_box.pack_start(self.ip_label, False, True, 0)
-        network_info_box.pack_start(self.dns_label, False, True, 0)
-        network_info_box.pack_start(self.gateway_label, False, True, 0)
 
-        self.public_ip_label = Gtk.Label(label="Public IP: N/A")
-        self.public_ip_label.set_halign(Gtk.Align.START)
-        network_info_box.pack_start(self.public_ip_label, False, True, 0)
-
-        public_ip = self.get_public_ip()
-        self.public_ip_label.set_text(f"•     Public IP: {public_ip}")
+        self.public_ip = self.get_public_ip()
 
         content_box.pack_start(network_info_box, False, True, 0)
+        content_box.pack_start(network_info_box_botton, False, True, 0)
 
 
         # Network speed
@@ -200,12 +191,9 @@ class WiFiTab(Gtk.Box):
 
 
 
-        network_details = get_network_details(logging)
+        self.network_details = get_network_details(logging)
 
-        self.ip_label.set_text(f"IP Address: {network_details['ip_address']}")
-        self.dns_label.set_text(f"DNS: {network_details['dns']}")
-        self.gateway_label.set_text(f"Gateway: {network_details['gateway']}")
-        
+        self.ip_label.set_text(f"IP Address: {self.network_details['ip_address']}")        
 
         # Network list section
         networks_label = Gtk.Label()
@@ -220,6 +208,7 @@ class WiFiTab(Gtk.Box):
         networks_frame.set_shadow_type(Gtk.ShadowType.IN)
         self.networks_box = Gtk.ListBox()
         self.networks_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.networks_box.get_style_context().add_class("network-list")
         networks_frame.add(self.networks_box)
         content_box.pack_start(networks_frame, True, True, 0)
 
@@ -268,8 +257,8 @@ class WiFiTab(Gtk.Box):
         details = get_network_details(self.logging)
 
         self.ip_label.set_text(f"IP Address: {details['ip_address']}")
-        self.dns_label.set_text(f"•     DNS: {details['dns']}")
-        self.gateway_label.set_text(f"•     Gateway: {details['gateway']}")
+        # self.dns_label.set_text(f"• DNS: {details['dns']}")
+        # self.gateway_label.set_text(f"• Gateway: {details['gateway']}")
 
     def get_public_ip(self):
         try:
@@ -479,9 +468,27 @@ class WiFiTab(Gtk.Box):
         if network["security"].lower() != "none":
             lock_icon = Gtk.Image.new_from_icon_name("system-lock-screen-symbolic", Gtk.IconSize.MENU)
             box.pack_end(lock_icon, False, False, 0)
+            
+        # security type
+        self.security_type = network["security"]
 
         row.add(box)
         self.networks_box.add(row)
+        
+        if network["in_use"]:
+            separator_row = Gtk.ListBoxRow()
+            separator_row.set_selectable(False)
+            separator_row.set_activatable(False)
+
+            separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+            separator.get_style_context().add_class("network-separator")
+            separator.set_margin_start(10)
+            separator.set_margin_end(10)
+            separator.set_margin_top(5)
+            separator.set_margin_bottom(5)
+
+            separator_row.add(separator)
+            self.networks_box.add(separator_row)
 
         def add_animation_with_delay(row_widget, index):
             if row_widget and row_widget.get_parent() is not None:
@@ -495,7 +502,8 @@ class WiFiTab(Gtk.Box):
                 GLib.timeout_add(350, remove_animation_class)
             return False
 
-        index = len(self.networks_box.get_children()) - 1
+        index = len([child for child in self.networks_box.get_children() 
+                if child.get_selectable()]) - 1  
         GLib.timeout_add(30 * index, add_animation_with_delay, row, index)
 
     def _create_signal_icon(self, network):
@@ -555,14 +563,17 @@ class WiFiTab(Gtk.Box):
         connected_box.pack_start(connected_icon, False, False, 0)
         connected_box.pack_start(connected_label, False, False, 0)
         container_box.pack_start(connected_box, False, True, 0)
+        
+        # Network properties button
+        properties_button = Gtk.Button()
+        properties_button.set_tooltip_text("Properties")
+        properties_button.get_style_context().add_class("properties-button")
+        properties_button.connect("clicked", self.show_prop_dialog)
+        properties_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.MENU)
+        properties_icon.get_style_context().add_class("rotate-gear")
+        properties_button.set_image(properties_icon)
+        container_box.pack_start(properties_button, False, False, 0)
 
-        qr_button = Gtk.Button()
-        qr_button.set_tooltip_text("Show Qr code")
-        qr_button.get_style_context().add_class("qr-button")
-        qr_button.connect("clicked", self.show_qr_dialog)
-        qr_icon = Gtk.Image.new_from_icon_name("qrscanner-symbolic", Gtk.IconSize.MENU)
-        qr_button.set_image(qr_icon)
-        container_box.pack_start(qr_button, False, False, 0)
 
     def _show_network_error(self, error_message):
         """Show an error message in the networks list"""
@@ -976,7 +987,7 @@ class WiFiTab(Gtk.Box):
             self.logging.log(LogLevel.Error, f"Failed to get current network: {e}")
             return None
 
-    def show_qr_dialog(self, button):
+    def show_prop_dialog(self, button):
             """Show a qr code dialog for current network"""
             # Get current network
             current_network = self.get_current_network()
@@ -994,46 +1005,52 @@ class WiFiTab(Gtk.Box):
                     )
 
                     # use hardcoded fallback title text to avoid missing translation attribute diagnostics
-                    dialog_title = getattr(self.txt, "wifi_share_title", "Share WiFi")
+                    # dialog_title = getattr(self.txt, "wifi_share_title", "Share WiFi")
+                    dialog_title = "Network Properties"
 
-                    qr_dialog = Gtk.Dialog(
+                    prop_dialog = Gtk.Dialog(
                         title=dialog_title,
                         parent=self.get_toplevel(),
-                        flags=Gtk.DialogFlags.MODAL,
+                        flags=0,
                     )
-                    qr_dialog.set_default_size(0,0)
-                    qr_dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
+                    prop_dialog.set_size_request(500, 500)
+                    prop_dialog.set_modal(True)
+                    prop_dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
 
                     # header
                     header_bar = Gtk.HeaderBar()
                     header_bar.set_show_close_button(True)
                     header_bar.set_title(dialog_title)
-                    qr_dialog.set_titlebar(header_bar)
+                    prop_dialog.set_titlebar(header_bar)
+                    
+                    # scrolled window for content
+                    scrolled_window = Gtk.ScrolledWindow()
+                    scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+                    scrolled_window.set_vexpand(True)
 
                     # content area
-                    content_area = qr_dialog.get_content_area()
-                    content_area.set_spacing(10)
-                    content_area.set_margin_top(10)
-                    content_area.set_margin_bottom(10)
-                    content_area.set_margin_start(10)
-                    content_area.set_margin_end(10)
+                    main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+                    main_box.set_margin_top(10)
+                    main_box.set_margin_bottom(10)
+                    main_box.set_margin_start(10)
+                    main_box.set_margin_end(10)
 
-                    # for qr code image
+                    # create top box for qr code 
+                    # create bottom box for network details 
                     top_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-                    top_box.set_margin_bottom(20)
+                    bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
 
+                    
                     # image holder
                     qr_button = Gtk.Button()
                     qr_button.set_size_request(124,124)
                     qr_button.set_relief(Gtk.ReliefStyle.NONE)
                     qr_button.get_style_context().add_class("qr_image_holder")
-                    top_box.pack_start(qr_button, False, False, 0)
 
                     # fallback for wifi_share_scan
                     scan_text = getattr(self.txt, "wifi_share_scan", "Scan this QR code to join")
                     scan_label = Gtk.Label(label=scan_text)
                     scan_label.get_style_context().add_class("scan_label")
-                    top_box.pack_start(scan_label, False, False, 0)
 
                     if qr_path:
                         qr_image = Gtk.Image()
@@ -1046,11 +1063,12 @@ class WiFiTab(Gtk.Box):
                         error_label = Gtk.Label(label="Failed to generate QR code")
                         qr_button.add(error_label)
 
-                    content_area.pack_start(top_box, False, True, 0)
+                    top_box.pack_start(scan_label, False, False, 0)
+                    top_box.pack_start(qr_button, False, False, 0)
 
                     # network details
-                    bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
-                    bottom_box.set_margin_top(1)
+                    # bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+                    # bottom_box.set_margin_top(1)
 
                     # network name
                     ssid_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -1083,18 +1101,101 @@ class WiFiTab(Gtk.Box):
                     passwd = Gtk.Label(label=connection_info.get("password", "Hidden"))
                     passwd.get_style_context().add_class("dimmed-label")
                     passwd.set_halign(Gtk.Align.START)
+                    
                     security_box.pack_start(security_label, False, False, 0)
                     security_box.pack_start(passwd, False, False, 0)
+                    
+                    top_box.pack_start(ssid_box, False, False, 0)
+                    top_box.pack_start(security_box, False, False, 0)
 
-                    # add to bottom box
-                    bottom_box.pack_start(ssid_box, False, False, 0)
-                    bottom_box.pack_start(security_box, False, False, 0)
+                    main_box.pack_start(top_box, True, True, 0)
+                    main_box.pack_end(bottom_box, True, True, 0)
+                    
+                    bottom_label = Gtk.Label(label="Network Details")
+                    bottom_label.set_markup("<span weight='bold' size='large'>Network Details</span>")
+                    
+                    bottom_box.pack_start(bottom_label, False, False, 0)
+                    
+                    # Ip address and other details
+                    details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+                    
+                    ip_address_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    ip_address_box.get_style_context().add_class("ip-address-box")
+                    ip_address_label = Gtk.Label(label="IP Address:")
+                    ip_address_label.get_style_context().add_class("dimmed-label")
+                    ip_address_label.set_halign(Gtk.Align.START)
+                    
+                    ip_address = Gtk.Label()
+                    ip_address.set_text(f"{self.network_details['ip_address']}")
+                    ip_address.get_style_context().add_class("dimmed-label")
+                    ip_address.set_halign(Gtk.Align.START)
+                    ip_address_box.pack_start(ip_address_label, False, False, 0)
+                    ip_address_box.pack_start(ip_address, True, True, 0)
+                    details_box.pack_start(ip_address_box, False, False, 0)
+                    
+                    dns_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    dns_box.get_style_context().add_class("dns-box")
+                    dns_label = Gtk.Label(label="DNS :")
+                    dns_label.get_style_context().add_class("dimmed-label")
+                    dns_label.set_halign(Gtk.Align.START)
+                    
+                    dns = Gtk.Label()
+                    dns.set_text(f"{self.network_details['dns']}")
+                    dns.get_style_context().add_class("dimmed-label")
+                    dns.set_halign(Gtk.Align.START)
+                    dns_box.pack_start(dns_label, False, False, 0)
+                    dns_box.pack_start(dns, True, True, 0)
+                    details_box.pack_start(dns_box, False, False, 0)
+                    
+                    gateway_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    gateway_box.get_style_context().add_class("gateway-box")
+                    gateway_label = Gtk.Label(label="Gateway :")
+                    gateway_label.get_style_context().add_class("dimmed-label")
+                    gateway_label.set_halign(Gtk.Align.START)
+                    
+                    gateway = Gtk.Label()
+                    gateway.set_text(f"{self.network_details['gateway']}")
+                    gateway.get_style_context().add_class("dimmed-label")
+                    gateway.set_halign(Gtk.Align.START)
+                    gateway_box.pack_start(gateway_label, False, False, 0)
+                    gateway_box.pack_start(gateway, True, True, 0)
+                    details_box.pack_start(gateway_box, False, False, 0)
+                    
+                    security_type_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    security_type_box.get_style_context().add_class("security-type-box")
+                    security_type_label = Gtk.Label(label="Security :")
+                    security_type_label.get_style_context().add_class("dimmed-label")
+                    security_type_label.set_halign(Gtk.Align.START)
+                    
+                    security_type = Gtk.Label(label=self.security_type)
+                    security_type.get_style_context().add_class("dimmed-label")
+                    security_type.set_halign(Gtk.Align.START)
+                    security_type_box.pack_start(security_type_label, False, False, 0)
+                    security_type_box.pack_start(security_type, True, True, 0)
+                    details_box.pack_start(security_type_box, False, False, 0)
+                    
+                    public_ip_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    public_ip_box.get_style_context().add_class("public-ip-box")
+                    public_ip_label = Gtk.Label(label="Public IP :")
+                    public_ip_label.get_style_context().add_class("dimmed-label")
+                    public_ip_label.set_halign(Gtk.Align.START)
+                    
+                    public_ip = Gtk.Label()
+                    public_ip.set_text(f"{self.public_ip}")
+                    public_ip.get_style_context().add_class("dimmed-label")
+                    public_ip.set_halign(Gtk.Align.START)
+                    public_ip_box.pack_start(public_ip_label, False, False, 0)
+                    public_ip_box.pack_start(public_ip, True, True, 0)
+                    details_box.pack_start(public_ip_box, False, False, 0)
+                    
+                    
+                    bottom_box.pack_start(details_box, False, False, 0)
+                    scrolled_window.add(main_box)
+                    prop_dialog.get_content_area().pack_start(scrolled_window, True, True, 0)
 
-                    content_area.pack_start(bottom_box, False, True, 0)
-
-                    qr_dialog.show_all()
-                    qr_dialog.run()
-                    qr_dialog.destroy()
+                    prop_dialog.show_all()
+                    prop_dialog.run()
+                    prop_dialog.destroy()
 
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"failed to open qr code dialog: {e}")
