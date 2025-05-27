@@ -173,6 +173,7 @@ class WiFiTab(Gtk.Box):
         network_info_box.pack_start(self.ip_label, False, True, 0)
 
         self.public_ip = self.get_public_ip()
+        self.public_ip_visible = False
 
         content_box.pack_start(network_info_box, False, True, 0)
         content_box.pack_start(network_info_box_botton, False, True, 0)
@@ -1021,7 +1022,7 @@ class WiFiTab(Gtk.Box):
                         parent=self.get_toplevel(),
                         flags=0,
                     )
-                    prop_dialog.set_size_request(500, 500)
+                    prop_dialog.set_size_request(380, 500)
                     prop_dialog.set_modal(True)
                     prop_dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
 
@@ -1127,9 +1128,9 @@ class WiFiTab(Gtk.Box):
                     # Ip address and other details
                     details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
                     
-                    ip_address_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    ip_address_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                     ip_address_box.get_style_context().add_class("ip-address-box")
-                    ip_address_label = Gtk.Label(label="IP Address:")
+                    ip_address_label = Gtk.Label(label="IP Address")
                     ip_address_label.get_style_context().add_class("dimmed-label")
                     ip_address_label.set_halign(Gtk.Align.START)
                     
@@ -1141,9 +1142,9 @@ class WiFiTab(Gtk.Box):
                     ip_address_box.pack_start(ip_address, True, True, 0)
                     details_box.pack_start(ip_address_box, False, False, 0)
                     
-                    dns_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    dns_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                     dns_box.get_style_context().add_class("dns-box")
-                    dns_label = Gtk.Label(label="DNS :")
+                    dns_label = Gtk.Label(label="DNS")
                     dns_label.get_style_context().add_class("dimmed-label")
                     dns_label.set_halign(Gtk.Align.START)
                     
@@ -1155,9 +1156,9 @@ class WiFiTab(Gtk.Box):
                     dns_box.pack_start(dns, True, True, 0)
                     details_box.pack_start(dns_box, False, False, 0)
                     
-                    gateway_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    gateway_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                     gateway_box.get_style_context().add_class("gateway-box")
-                    gateway_label = Gtk.Label(label="Gateway :")
+                    gateway_label = Gtk.Label(label="Gateway")
                     gateway_label.get_style_context().add_class("dimmed-label")
                     gateway_label.set_halign(Gtk.Align.START)
                     
@@ -1169,9 +1170,9 @@ class WiFiTab(Gtk.Box):
                     gateway_box.pack_start(gateway, True, True, 0)
                     details_box.pack_start(gateway_box, False, False, 0)
                     
-                    security_type_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    security_type_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                     security_type_box.get_style_context().add_class("security-type-box")
-                    security_type_label = Gtk.Label(label="Security :")
+                    security_type_label = Gtk.Label(label="Security")
                     security_type_label.get_style_context().add_class("dimmed-label")
                     security_type_label.set_halign(Gtk.Align.START)
                     
@@ -1182,25 +1183,40 @@ class WiFiTab(Gtk.Box):
                     security_type_box.pack_start(security_type, True, True, 0)
                     details_box.pack_start(security_type_box, False, False, 0)
                     
-                    public_ip_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    public_ip_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                     public_ip_box.get_style_context().add_class("public-ip-box")
-                    public_ip_label = Gtk.Label(label="Public IP :")
+                    
+                    # For label and hide icon
+                    public_ip_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                    public_ip_label = Gtk.Label(label="Public IP")
                     public_ip_label.get_style_context().add_class("dimmed-label")
                     public_ip_label.set_halign(Gtk.Align.START)
                     
-                    public_ip_value = Gtk.Label()
-                    public_ip_value.set_text(f"{self.public_ip}")
-                    public_ip_value.get_style_context().add_class("dimmed-label")
-                    public_ip_value.set_halign(Gtk.Align.START)
-                    public_ip_box.pack_start(public_ip_label, False, False, 0)
-                    public_ip_box.pack_start(public_ip_value, True, True, 0)
+                    self.eye_button = Gtk.Button()
+                    self.eye_button.set_relief(Gtk.ReliefStyle.NONE)
+                    self.eye_icon = Gtk.Image.new_from_icon_name("view-reveal-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                    self.eye_button.add(self.eye_icon)
+                    self.eye_button.set_tooltip_text("Show/Hide Public IP")
+                    
+                    public_ip_header.pack_start(public_ip_label, True, True, 0)
+                    public_ip_header.pack_start(self.eye_button, False, False, 0)
+                    
+                    self.public_ip_value = Gtk.Label()
+                    self.public_ip_value.set_text(f"hidden")
+                    self.public_ip_value.get_style_context().add_class("dimmed-label")
+                    self.public_ip_value.set_halign(Gtk.Align.START)
+                        
+                    self.eye_button.connect("clicked", self.toggle_public_ip)
+
+                    public_ip_box.pack_start(public_ip_header, False, False, 0)
+                    public_ip_box.pack_start(self.public_ip_value, True, True, 0)
                     details_box.pack_start(public_ip_box, False, False, 0)
                     
                     
                     bottom_box.pack_start(details_box, False, False, 0)
                     scrolled_window.add(main_box)
                     prop_dialog.get_content_area().pack_start(scrolled_window, True, True, 0)
-
+                                                
                     prop_dialog.show_all()
                     prop_dialog.run()
                     prop_dialog.destroy()
@@ -1208,6 +1224,21 @@ class WiFiTab(Gtk.Box):
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"failed to open qr code dialog: {e}")
                     traceback.print_exc()
+
+    def toggle_public_ip(self, button):
+        if self.public_ip_visible:
+            self.public_ip_value.set_text("hidden")
+            self.eye_icon.set_from_icon_name("view-reveal-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+            self.eye_button.set_tooltip_text("Show Public IP")
+            self.public_ip_visible = False
+        else:
+            if self.public_ip == "N/A":
+                self.public_ip = self.get_public_ip()
+                
+            self.public_ip_value.set_text(self.public_ip)
+            self.eye_icon.set_from_icon_name("view-conceal-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+            self.eye_button.set_tooltip_text("Hide Public IP")
+            self.public_ip_visible = True
                     
     def on_enable_separator_changed(self, widget, active):
         """Handle connected seprarator toggled signal from settings tab"""
