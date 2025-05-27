@@ -1108,12 +1108,15 @@ class BetterControl(Gtk.Window):
             dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
             # Create a fresh instance of the settings tab to use in the dialog
             settings_tab = SettingsTab(self.logging, self.txt)
+            wifi_tab = WiFiTab(self.logging, self.txt)
             settings_tab.connect(
                 "tab-visibility-changed", self.on_tab_visibility_changed
             )
             settings_tab.connect("tab-order-changed", self.on_tab_order_changed)
             settings_tab.connect("vertical-tabs-changed", self.on_vertical_tabs_changed)
             settings_tab.connect("vertical-tabs-icon-only-changed", self.on_vertical_tabs_icon_only_changed)
+            settings_tab.connect("enable-separator-changed", wifi_tab.on_enable_separator_changed)
+            
             # Add the settings content to the dialog's content area
             content_area = dialog.get_content_area()
             content_area.add(settings_tab)

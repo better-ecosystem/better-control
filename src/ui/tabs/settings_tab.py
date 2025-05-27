@@ -18,6 +18,7 @@ class SettingsTab(Gtk.Box):
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
         'vertical-tabs-changed': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
         'vertical-tabs-icon-only-changed': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
+        'enable-separator-changed': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
     }
 
     def __init__(self, logging: Logger, txt: English | Spanish | Portuguese | French):
@@ -223,6 +224,32 @@ class SettingsTab(Gtk.Box):
         vertical_tabs_icon_only_row.pack_end(vertical_tabs_icon_only_switch_box, False, False, 0)
 
         self.tab_section.pack_start(vertical_tabs_icon_only_row, False, False, 0)
+        
+        # Separator enable/disable
+        network_separator_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        network_separator_row.set_hexpand(True)
+        network_separator_row.set_margin_top(10)
+        network_separator_row.set_margin_bottom(10)
+
+        separator_row_label = Gtk.Label(label="Separate connected network")
+        separator_row_label.set_halign(Gtk.Align.START)
+        network_separator_row.pack_start(separator_row_label, True, True, 0)
+
+        self.separator_row_switch = Gtk.Switch()
+        separator_row_enabled = self.settings.get("enable_separator", False)
+        self.separator_row_switch.set_active(separator_row_enabled)
+        self.separator_row_switch.set_size_request(40, 20)
+        self.separator_row_switch.set_valign(Gtk.Align.CENTER)
+        self.separator_row_switch.connect("notify::active", self.on_separator_row_toggled)
+
+        separator_row_switch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        separator_row_switch_box.set_size_request(50, 24)
+        separator_row_switch_box.set_valign(Gtk.Align.CENTER)
+        separator_row_switch_box.pack_start(self.separator_row_switch, True, False, 0)
+
+        network_separator_row.pack_end(separator_row_switch_box, False, False, 0)
+
+        self.tab_section.pack_start(network_separator_row, False, False, 0)
 
         tab_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.MENU)
         tab_text = Gtk.Label(label="Tab Settings")
@@ -324,6 +351,12 @@ class SettingsTab(Gtk.Box):
         self.settings["vertical_tabs_icon_only"] = active
         save_settings(self.settings, self.logging)
         self.emit("vertical-tabs-icon-only-changed", active)
+    
+    def on_separator_row_toggled(self, switch, gparam):
+        active = switch.get_active()
+        self.settings["enable_separator"] = active
+        save_settings(self.settings, self.logging)
+        self.emit("enable-separator-changed", active)
 
     def on_move_up_clicked(self, button, tab_name):
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])

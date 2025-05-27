@@ -56,6 +56,10 @@ def get_wifi_css():
             border-bottom-left-radius: 0px;
             padding: 10px;
         }
+        .security-type-box {
+            border-top-right-radius: 0px;
+            border-top-left-radius: 0px;
+        }
         .dns-box {
             border-top-right-radius: 0px;
             border-top-left-radius: 0px;

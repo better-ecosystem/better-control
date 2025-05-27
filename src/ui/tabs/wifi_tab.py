@@ -4,9 +4,11 @@ import traceback
 import gi # type: ignore
 import threading
 import requests
+from ui.tabs.settings_tab import SettingsTab
 from utils.logger import LogLevel, Logger
 import subprocess
 
+from utils.settings import load_settings, save_settings
 from utils.translations import Translation
 
 gi.require_version("Gtk", "3.0")
@@ -45,7 +47,15 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
-
+        
+        # Load settings
+        self.settings = load_settings(self.logging)
+        
+        # Get separator from settings and set default to false
+        self.separator_enabled = self.settings.get("enable_separator", False)
+         
+        settings_tab = SettingsTab(self.logging, self.txt)        
+        settings_tab.connect("enable-separator-changed", self.on_enable_separator_changed)
         # Track tab visibility status
         self.tab_visible = False
 
@@ -256,7 +266,7 @@ class WiFiTab(Gtk.Box):
     def update_network_details(self):
         details = get_network_details(self.logging)
 
-        self.ip_label.set_text(f"IP Address: {details['ip_address']}")
+        self.ip_label.set_text(f"IP Address: {details['ip_address']}")        
         # self.dns_label.set_text(f"• DNS: {details['dns']}")
         # self.gateway_label.set_text(f"• Gateway: {details['gateway']}")
 
@@ -268,8 +278,6 @@ class WiFiTab(Gtk.Box):
         except:
             pass
         return "N/A"
-
-
         
      # keybinds for wifi tab
     def on_key_press(self, widget, event):
@@ -475,10 +483,10 @@ class WiFiTab(Gtk.Box):
         row.add(box)
         self.networks_box.add(row)
         
-        if network["in_use"]:
-            separator_row = Gtk.ListBoxRow()
-            separator_row.set_selectable(False)
-            separator_row.set_activatable(False)
+        if network["in_use"] and self.separator_enabled:
+            self.separator_row = Gtk.ListBoxRow()
+            self.separator_row.set_selectable(False)
+            self.separator_row.set_activatable(False)
 
             separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
             separator.get_style_context().add_class("network-separator")
@@ -487,8 +495,8 @@ class WiFiTab(Gtk.Box):
             separator.set_margin_top(5)
             separator.set_margin_bottom(5)
 
-            separator_row.add(separator)
-            self.networks_box.add(separator_row)
+            self.separator_row.add(separator)
+            self.networks_box.add(self.separator_row)
 
         def add_animation_with_delay(row_widget, index):
             if row_widget and row_widget.get_parent() is not None:
@@ -1180,12 +1188,12 @@ class WiFiTab(Gtk.Box):
                     public_ip_label.get_style_context().add_class("dimmed-label")
                     public_ip_label.set_halign(Gtk.Align.START)
                     
-                    public_ip = Gtk.Label()
-                    public_ip.set_text(f"{self.public_ip}")
-                    public_ip.get_style_context().add_class("dimmed-label")
-                    public_ip.set_halign(Gtk.Align.START)
+                    public_ip_value = Gtk.Label()
+                    public_ip_value.set_text(f"{self.public_ip}")
+                    public_ip_value.get_style_context().add_class("dimmed-label")
+                    public_ip_value.set_halign(Gtk.Align.START)
                     public_ip_box.pack_start(public_ip_label, False, False, 0)
-                    public_ip_box.pack_start(public_ip, True, True, 0)
+                    public_ip_box.pack_start(public_ip_value, True, True, 0)
                     details_box.pack_start(public_ip_box, False, False, 0)
                     
                     
@@ -1200,3 +1208,15 @@ class WiFiTab(Gtk.Box):
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"failed to open qr code dialog: {e}")
                     traceback.print_exc()
+                    
+    def on_enable_separator_changed(self, widget, active):
+        """Handle connected seprarator toggled signal from settings tab"""
+        self.settings["enable_separator"] = active
+        save_settings(self.settings, self.logging)
+        
+        self.separator_enabled = active
+        
+        # TODO update on realtime
+        
+        self.logging.log(LogLevel.Info, f"WiFi separator visibility set to: {active}")
+        self.logging.log(LogLevel.Info, f"Restart to see the changes")
