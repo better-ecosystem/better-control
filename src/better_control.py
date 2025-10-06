@@ -110,7 +110,7 @@ def setup_environment_and_dirs(logger):
 
 def load_language_and_translations(arg_parser, logger):
     settings = load_settings(logger)
-    available_languages = ["en", "es", "pt", "fr", "id", "it", "tr", "de"]
+    available_languages = ["en", "es", "pt", "fr", "id", "it", "tr", "de", "ru"]
 
     if arg_parser.find_arg(("-L", "--lang")):
         lang = arg_parser.option_arg(("-L", "--lang"))
@@ -259,7 +259,7 @@ def setup_temp_directory(logger):
 
 def process_language(arg_parser, logger):
     settings = load_settings(logger)
-    available_languages = ["en", "es", "pt", "fr", "id", "it", "tr", "de"]
+    available_languages = ["en", "es", "pt", "fr", "id", "it", "tr", "de", "ru"]
 
     if arg_parser.find_arg(("-L", "--lang")):
         lang = arg_parser.option_arg(("-L", "--lang"))

@@ -1072,7 +1072,7 @@ class BetterControl(Gtk.Window):
         app_name_label.set_justify(Gtk.Justification.CENTER)
         box.pack_start(app_name_label, False, False, 0)
 
-        version_label = Gtk.Label(label="Version: v6.12.0")
+        version_label = Gtk.Label(label="Version: v6.12.2")
         version_label.set_justify(Gtk.Justification.CENTER)
         box.pack_start(version_label, False, False, 0)
 

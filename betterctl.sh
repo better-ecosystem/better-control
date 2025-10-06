@@ -2,7 +2,7 @@
 # A simple script to install or uninstall Better Control on your OS
 clear
 echo -e "\e[32mBetter Control Manager\e[0m"
-echo -e "your version : \e[34m6.12.0\e[0m"
+echo -e "your version : \e[34m6.12.2\e[0m"
 echo " "
 echo -e "This script is still under development to improve it if you find any errors head over to \e[31m\e[1mhttps://github.com/better-ecosystem/better-control/issues\e[0m and open an issue on it"
 echo " "

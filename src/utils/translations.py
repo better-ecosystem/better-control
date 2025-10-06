@@ -258,6 +258,215 @@ class English:
         self.settings_language_changed = "Language changed"
 
 
+class Russian:
+    """Русский перевод утилиты"""
+
+    def __init__(self):
+        # app description
+        self.msg_desc = "Красивая панель управления для Linux на тулките GTK"
+
+        # USB notifications
+        self.usb_connected = "{device} подключено."
+        self.usb_disconnected = "{device} отключено."
+        self.permission_allowed = "Доступ к USB разрешён"
+        self.permission_blocked = "Доступ к USB запрещён"
+        self.msg_app_url = "https://github.com/quantumvoid0/better-control"
+        self.msg_usage = "Инструкция"
+
+        # for args
+        self.msg_args_help = "Выводит это сообщение"
+        self.msg_args_autostart = "При запуске, открывает вкладку автозапуска"
+        self.msg_args_battery = "При запуске, открывает вкладку управления батареей"
+        self.msg_args_bluetooth = "При запуске, открывает вкладку управления Bluetooth"
+        self.msg_args_display = "При запуске, открывает вкладку настройки экранов"
+        self.msg_args_force = "Принуждает приложение запускаться только в случае, если установлены все зависимости"
+        self.msg_args_power = "При запуске, открывает вкладку управления питанием"
+        self.msg_args_volume = "При запуске, открывает вкладку управления громкостью"
+        self.msg_args_volume_v = "Также, при запуске, открывает вкладку управления громкостью"
+        self.msg_args_wifi = "При запуске, открывает вкладку управления сетями Wi-Fi"
+
+        self.msg_args_log = "Программа либо выведет логи в файл, если таков указан,\n либо в stdout на основе уровня логов от 0 до 3"
+        self.msg_args_redact = "Меняет важную информацию об оборудовании (имена сетей, идентификаторы устройств, т.д.)"
+        self.msg_args_size = "Устанавливает указанный пользователем размер окна"
+
+        # commonly used
+        self.connect = "Подключить"
+        self.connected = "Подключено"
+        self.connecting = "Подключение..."
+        self.disconnect = "Отключить"
+        self.disconnected = "Не подключено"
+        self.disconnecting = "Отключение..."
+        self.enable = "Включить"
+        self.disable = "Выключить"
+        self.close = "Закрыть"
+        self.show = "Показать"
+        self.loading = "Загрузка..."
+        self.loading_tabs = "Загрузка вкладок..."
+
+        # for tabs
+        self.msg_tab_autostart = "Автозапуск"
+        self.msg_tab_usbguard = "USBGuard"
+        self.usbguard_title = "Управление устройствами USB"
+        self.refresh = "Обновить"
+        self.allow = "Разрешить"
+        self.block = "Запретить"
+        self.allowed = "Разрешено"
+        self.blocked = "Запрещено"
+        self.rejected = "Отклонено"
+        self.policy = "Просмотреть политику"
+        self.usbguard_error = "Ошибка доступа к USBGuard"
+        self.usbguard_not_installed = "USBGuard не установлен"
+        self.usbguard_not_running = "Служба USBGuard не запущена"
+        self.no_devices = "Ни одно USB-устройство не подключено"
+        self.operation_failed = "Операция провалена"
+        self.policy_error = "Не удалось загрузить политику"
+        self.permanent_allow = "Разрешить временно"
+        self.permanent_allow_tooltip = "Разрешить навсегда (добавить в политику)"
+        self.msg_tab_battery = "Батарея"
+        self.msg_tab_bluetooth = "Bluetooth"
+        self.msg_tab_display = "Экран"
+        self.msg_tab_power = "Питание"
+        self.msg_tab_volume = "Громкость"
+        self.msg_tab_wifi = "Wi-Fi"
+
+        # Autostart tab translations
+        self.autostart_title = "Приложения в автозапуске"
+        self.autostart_session = "Сессия"
+        self.autostart_show_system_apps = "Показать системные приложения в автозапуске"
+        self.autostart_configured_applications = "Настроенные приложения"
+        self.autostart_tooltip_rescan = "Пересканировать приложения в автозапуске"
+
+        # Battery tab translations
+        self.battery_title = "Дэшборд батареи"
+        self.battery_power_saving = "Энергосбережение"
+        self.battery_balanced = "Сбалансированный"
+        self.battery_performance = "Макс. производительность"
+        self.battery_batteries = "Батареи"
+        self.battery_overview = "Просмотр"
+        self.battery_details = "Подробности"
+        self.battery_tooltip_refresh = "Обновить информацию о батареях"
+        self.battery_no_batteries = "Батареи отсутствуют"
+
+        # Bluetooth tab translations
+        self.bluetooth_title = "Устройства Bluetooth"
+        self.bluetooth_scan_devices = "Поиск устройств"
+        self.bluetooth_scanning = "Поиск..."
+        self.bluetooth_power = "Bluetooth"
+        self.bluetooth_available_devices = "Доступные устройства"
+        self.bluetooth_tooltip_refresh = "Поиск устройств"
+        self.bluetooth_connect_failed = "Не удалось подключиться к устройству"
+        self.bluetooth_disconnect_failed = "Не удалось отключиться от устройсва"
+        self.bluetooth_try_again = "Попробуйте позже"
+
+        # Bluetooth forget button translations
+        self.bluetooth_forget_failed = "Не удалось разорвать сопряжение"
+        self.forget = "Разовать сопряжение"
+        self.forget_in_progress = "Идёт разрыв сопряжения..."
+
+        # Display tab translations
+        self.display_title = "Параметры экрана"
+        self.display_brightness = "Яркость экрана"
+        self.display_blue_light = "Синий цвет"
+        self.display_orientation = "Угол поворота"
+        self.display_default = "Стандарт"
+        self.display_left = "Влево"
+        self.display_right = "Вправо"
+        self.display_inverted = "Снизу вверх"
+
+        self.display_rotation = "Параметры поворота"
+        self.display_simple_rotation = "Быстрый поворот"
+        self.display_specific_orientation = "Точный поворот"
+        self.display_flip_controls = "Поворот экрана"
+        self.display_rotate_cw = "Повернутьпо часовой"
+        self.display_rotate_ccw = "Повернуть против часовой"
+        self.display_rotation_help = "Поворот применится немедленно. Через 10 секунд без подтверждения произойдёт сброс."
+
+        # Power tab translations
+        self.power_title = "Управление питанием"
+        self.power_tooltip_menu = "Настройка меню питания"
+        self.power_menu_buttons = "Кнопки"
+        self.power_menu_commands = "Комманды"
+        self.power_menu_colors = "Цвета"
+        self.power_menu_show_hide_buttons = "Показать/Спрятать кнопки"
+        self.power_menu_shortcuts_tab_label = "Ссылки"
+        self.power_menu_visibility = "Кнопки"
+        self.power_menu_keyboard_shortcut = "Комбинации клавиш"
+        self.power_menu_show_keyboard_shortcut = "Показать комбинации клавиш"
+        self.power_menu_lock = "Запереть"
+        self.power_menu_logout = "Завершить сеанс"
+        self.power_menu_suspend = "Спящий режим"
+        self.power_menu_hibernate = "Гибернация"
+        self.power_menu_reboot = "Перезагрузка"
+        self.power_menu_shutdown = "Выключение"
+        self.power_menu_apply = "Применить"
+        self.power_menu_tooltip_lock = "Запереть экран"
+        self.power_menu_tooltip_logout = "Завершить текуший сеанс"
+        self.power_menu_tooltip_suspend = "Перевести устройство в спящий режим"
+        self.power_menu_tooltip_hibernate = "Гибернировать устройство"
+        self.power_menu_tooltip_reboot = "Перезагрузить устройство"
+        self.power_menu_tooltip_shutdown = "Выключить устройство"
+
+        # Volume tab translations
+        self.volume_title = "Параметры громкости"
+        self.volume_speakers = "Динамики"
+        self.volume_tab_tooltip = "Параметры динамиков"
+        self.volume_output_device = "Устройство вывода"
+        self.volume_device = "Устройство"
+        self.volume_output = "Вывод"
+        self.volume_speaker_volume = "Громкость динамика"
+        self.volume_mute_speaker = "Заглушить динамики"
+        self.volume_unmute_speaker = "Отключить глушение динамиков"
+        self.volume_quick_presets = "Быстрые преднастройки"
+        self.volume_output_combo_tooltip = "Выберите устройство вывода для этого приложения"
+
+        # Volume tab microphone translations
+        self.microphone_tab_microphone = "Микрофон"
+        self.microphone_tab_input_device = "Устройство ввода"
+        self.microphone_tab_volume = "Громкость микрофона"
+        self.microphone_tab_mute_microphone = "Заглушить микрофон"
+        self.microphone_tab_unmute_microphone = "Отключить глушение микрофона"
+        self.microphone_tab_tooltip = "Параметры микрофона"
+
+        # Volume tab App output translations
+        self.app_output_title = "Вывод приложения"
+        self.app_output_volume = "Громкость вывода приложения"
+        self.app_output_mute = "Заглушить"
+        self.app_output_unmute = "Отключить глушение"
+        self.app_output_tab_tooltip = "Параметры вывода приложения"
+        self.app_output_no_apps = "Ни в одном приложении не проигрывается аудио"
+        self.app_output_dropdown_tooltip = "Выберите устройство выбора для этого приложения"
+
+        # Volume tab App input translations
+        self.app_input_title = "Ввод приложения"
+        self.app_input_volume = "Громкость ввода приложения"
+        self.app_input_mute = "Заглушить микрофон этому приложению"
+        self.app_input_unmute = "Отключить глушение микрофона этому приложению"
+        self.app_input_tab_tooltip = "Параметры микрофона приложения"
+        self.app_input_no_apps = "Ни одно приложение не использует микрофон"
+
+        # WiFi tab translations
+        self.wifi_title = "Сети Wi-Fi"
+        self.wifi_refresh_tooltip = "Поиск сетей"
+        self.wifi_power = "Wi-Fi"
+        self.wifi_speed = "Скорость подключения"
+        self.wifi_download = "Скачивание"
+        self.wifi_upload = "Загрузка"
+        self.wifi_available = "Доступные сети"
+        self.wifi_forget = "Забыть"
+        self.wifi_share_title = "Поделиться сетью"
+        self.wifi_share_scan = "Сканируйте, чтобы поделиться"
+        self.wifi_network_name = "Имя сети"
+        self.wifi_password = "Пароль"
+        self.wifi_loading_networks = "Загрузка сетей..."
+
+        # Settings tab translations
+        self.settings_title = "Параметры"
+        self.settings_tab_settings = "Параметры вкладок"
+        self.settings_language = "Язык"
+        self.settings_language_changed_restart = "Перезапустите приложение для смены языка."
+        self.settings_language_changed = "Язык изменён"
+
+
 class German:
     """German language translation for the application"""
 
@@ -1684,6 +1893,8 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
         logging.log(LogLevel.Info, f"Using language: {lang}")
 
     match lang:
+        case "ru":
+            return Russian()
         case "es":
             return Spanish()
         case "it":
