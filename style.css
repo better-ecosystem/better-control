@@ -1,0 +1,71 @@
+#tab_box {
+    background-color: #FAFAFA;
+    border-radius: 8px;
+    padding: 12px;
+}
+#material_frame {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #E0E0E0;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+}
+#tab_header {
+    font-size: 18px;
+    font-weight: bold;
+    color: #212121;
+    margin-bottom: 12px;
+}
+#network_row {
+    background-color: #F5F5F5;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    transition: background 0.2s;
+}
+
+#network_row:hover {
+    background-color: #E0E0E0;
+}
+
+.active_network {
+    background-color: #BBDEFB;
+}
+
+#speed_label {
+    font-size: 14px;
+    color: #424242;
+}
+
+#network_row GtkLabel {
+    font-size: 14px;
+    color: #212121;
+}
+
+#network_row GtkLabel:last-child {
+    font-size: 12px;
+    color: #757575;
+}
+
+#volume_box #tab_header {
+    font-size: 18px;
+    font-weight: bold;
+    color: #212121;
+    margin-bottom: 12px;
+}
+
+notebook tab {
+    border-radius: 8px;
+    padding: 1px 16px;
+    margin: 0 4px;
+}
+
+notebook tab:checked {
+    background-color: #F2F2F2;
+}
+
+notebook tab:hover {
+    background-color: #F5F5F5;
+    color: #1976D2;
+}
+
