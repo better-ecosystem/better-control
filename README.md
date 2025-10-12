@@ -23,5 +23,5 @@ Expect broken code, missing features, and chaos.
 git clone https://github.com/better-ecosystem/better-control.git
 cd better-control
 git checkout c-rewrite
-gcc -std=c23 main.c wifi.c volume.c -o bc `pkg-config --cflags --libs gtk+-3.0`
+gcc -std=c23 main.c wifi.c volume.c display.c autostart.c -o bc `pkg-config --cflags --libs gtk+-3.0`
 ./bc

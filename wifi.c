@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <stdlib.h>
@@ -8,6 +9,105 @@ static GtkWidget *download_label_global;
 static GtkWidget *upload_label_global;
 static GtkWidget *networks_list;
 static gchar *active_ssid = NULL;
+
+static GtkWidget *conn_info_label;
+
+static gboolean public_ip_visible = FALSE;
+static GtkWidget *public_ip_label = NULL;
+static gchar public_ip[64] = "***.**.**.***";
+
+typedef struct {
+	GtkLabel *label;
+	GtkButton *button;
+} EyeData;
+
+static void update_connection_info(void);
+static void toggle_public_ip(GtkButton *button, gpointer user_data) {
+	public_ip_visible = !public_ip_visible;
+	update_connection_info();
+
+	// update icon
+	EyeData *data = user_data;
+	GtkImage *img = GTK_IMAGE(gtk_button_get_image(data->button));
+	gtk_image_set_from_icon_name(img,
+				     public_ip_visible
+					 ? "view-reveal-symbolic"
+					 : "view-conceal-symbolic",
+				     GTK_ICON_SIZE_BUTTON);
+}
+
+static size_t curl_write_cb(void *ptr, size_t size, size_t nmemb,
+			    void *stream) {
+	strncat((char *)stream, (char *)ptr, size * nmemb);
+	return size * nmemb;
+}
+
+static void update_connection_info() {
+	gchar priv_ip[64] = "", gateway[64] = "", dns[128] = "";
+	gchar *out = NULL;
+
+	g_spawn_command_line_sync(
+	    "nmcli -t -f IP4.ADDRESS,IP4.GATEWAY,IP4.DNS dev show", &out, NULL,
+	    NULL, NULL);
+	if (out) {
+		gchar **lines = g_strsplit(out, "\n", 0);
+		for (int i = 0; lines[i]; i++) {
+			gchar *line = g_strstrip(lines[i]);
+			if (g_str_has_prefix(line, "IP4.ADDRESS") &&
+			    priv_ip[0] == '\0') {
+				gchar **parts = g_strsplit(line, ":", 2);
+				if (parts[1]) {
+					gchar *ip = g_strstrip(parts[1]);
+					if (strncmp(ip, "127.", 4) != 0)
+						strncpy(priv_ip, ip,
+							sizeof(priv_ip));
+				}
+				g_strfreev(parts);
+			} else if (g_str_has_prefix(line, "IP4.GATEWAY") &&
+				   gateway[0] == '\0') {
+				gchar **parts = g_strsplit(line, ":", 2);
+				if (parts[1]) {
+					gchar *gw = g_strstrip(parts[1]);
+					if (strlen(gw) > 0)
+						strncpy(gateway, gw,
+							sizeof(gateway));
+				}
+				g_strfreev(parts);
+			} else if (g_str_has_prefix(line, "IP4.DNS")) {
+				gchar **parts = g_strsplit(line, ":", 2);
+				if (parts[1]) {
+					strncat(dns, g_strstrip(parts[1]),
+						sizeof(dns) - strlen(dns) - 1);
+					strncat(dns, " ",
+						sizeof(dns) - strlen(dns) - 1);
+				}
+				g_strfreev(parts);
+			}
+		}
+		g_strfreev(lines);
+		g_free(out);
+	}
+
+	CURL *curl = curl_easy_init();
+	if (curl) {
+		char buffer[64] = "";
+		curl_easy_setopt(curl, CURLOPT_URL, "https://api.ipify.org");
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);
+		curl_easy_perform(curl);
+		curl_easy_cleanup(curl);
+		strncpy(public_ip, buffer, sizeof(public_ip));
+	}
+
+	gchar combined[512];
+	snprintf(combined, sizeof(combined),
+		 "Private: %s  •  DNS: %s  •  Gateway: %s  •  Public: %s",
+		 priv_ip, gateway, dns,
+		 public_ip_visible ? public_ip : "***.**.**.***");
+
+	gtk_label_set_text(GTK_LABEL(conn_info_label), combined);
+}
 
 typedef struct {
 	const char *cmd;
@@ -200,7 +300,7 @@ static void populate_networks_row(const gchar *ssid, const gchar *signal,
 				  const gchar *bars, const gchar *security,
 				  gboolean is_active) {
 	GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_widget_set_name(row, "network_row");
+	gtk_widget_set_name(row, "rows");
 	if (is_active)
 		gtk_style_context_add_class(gtk_widget_get_style_context(row),
 					    "active_network");
@@ -368,7 +468,8 @@ static void scan_networks_cb(gchar *out) {
 	gtk_container_foreach(GTK_CONTAINER(networks_list),
 			      (GtkCallback)gtk_widget_destroy, NULL);
 	if (!out || strlen(out) == 0) {
-		GtkWidget *loading_label = gtk_label_new("   No networks found.");
+		GtkWidget *loading_label =
+		    gtk_label_new("   No networks found.");
 		gtk_label_set_xalign(GTK_LABEL(loading_label), 0.0);
 		gtk_box_pack_start(GTK_BOX(networks_list), loading_label, FALSE,
 				   FALSE, 6);
@@ -471,8 +572,10 @@ void build_wifi_tab(GtkWidget *wifi_box) {
 	gtk_widget_show_all(header);
 	gtk_box_pack_start(GTK_BOX(content), header, FALSE, TRUE, 8);
 
-	GtkWidget *speed_frame = gtk_frame_new("Connection Speed");
-	gtk_widget_set_name(speed_frame, "material_frame");
+	GtkWidget *speed_frame = gtk_frame_new("Connection Info");
+	gtk_style_context_add_class(gtk_widget_get_style_context(speed_frame),
+				    "frame-title-bold");
+
 	GtkWidget *speed_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
 	gtk_widget_set_margin_top(speed_box, 12);
 	gtk_widget_set_margin_bottom(speed_box, 12);
@@ -480,7 +583,7 @@ void build_wifi_tab(GtkWidget *wifi_box) {
 	gtk_widget_set_margin_end(speed_box, 12);
 	gtk_container_add(GTK_CONTAINER(speed_frame), speed_box);
 
-	speed_label = gtk_label_new("Calculating...");
+	speed_label = gtk_label_new("Connection Speed : Calculating...");
 	gtk_label_set_xalign(GTK_LABEL(speed_label), 0.0);
 	gtk_box_pack_start(GTK_BOX(speed_box), speed_label, FALSE, FALSE, 0);
 
@@ -494,11 +597,35 @@ void build_wifi_tab(GtkWidget *wifi_box) {
 	gtk_box_pack_start(GTK_BOX(speed_box), upload_label_global, FALSE,
 			   FALSE, 0);
 
+	GtkWidget *ip_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_box_pack_start(GTK_BOX(speed_box), ip_box, FALSE, FALSE, 0);
+
+	conn_info_label = gtk_label_new("Calculating...");
+	gtk_label_set_xalign(GTK_LABEL(conn_info_label), 0.0);
+	gtk_box_pack_start(GTK_BOX(ip_box), conn_info_label, TRUE, TRUE, 0);
+
+	GtkWidget *eye_btn = gtk_button_new_from_icon_name(
+	    "view-conceal-symbolic", GTK_ICON_SIZE_BUTTON);
+
+	EyeData *eye_data = g_malloc(sizeof(EyeData));
+	eye_data->label =
+	    GTK_LABEL(conn_info_label); 
+	eye_data->button = GTK_BUTTON(eye_btn);
+
+	g_signal_connect(eye_btn, "clicked", G_CALLBACK(toggle_public_ip),
+			 eye_data);
+
+	gtk_box_pack_start(GTK_BOX(ip_box), eye_btn, FALSE, FALSE, 0);
+
+	gtk_box_pack_start(GTK_BOX(speed_box), ip_box, FALSE, FALSE, 0);
+
 	gtk_widget_show_all(speed_frame);
 	gtk_box_pack_start(GTK_BOX(content), speed_frame, FALSE, TRUE, 8);
 
 	GtkWidget *networks_frame = gtk_frame_new("Available Networks");
-	gtk_widget_set_name(networks_frame, "material_frame");
+	gtk_style_context_add_class(
+	    gtk_widget_get_style_context(networks_frame), "frame-title-bold");
+
 	networks_list = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
 
 	GtkWidget *loading_label = gtk_label_new("   Loading networks...");
@@ -513,7 +640,6 @@ void build_wifi_tab(GtkWidget *wifi_box) {
 
 	g_timeout_add_seconds(2, speed_timer_cb, NULL);
 	g_timeout_add_seconds(5, scan_timer_cb, NULL);
+	g_timeout_add_seconds(2, (GSourceFunc)update_connection_info, NULL);
 }
-
-// final patch
 

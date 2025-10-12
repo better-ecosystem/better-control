@@ -2,6 +2,8 @@
 
 #include "volume.h"
 #include "wifi.h"
+#include "display.h"
+#include "autostart.h"
 
 static void activate(GtkApplication *app, gpointer user_data) {
 	GtkBuilder *builder = gtk_builder_new_from_file("ui.glade");
@@ -22,6 +24,15 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	GtkWidget *volume_box =
 	    GTK_WIDGET(gtk_builder_get_object(builder, "volume_box"));
 	build_volume_tab(volume_box);
+
+	GtkWidget *display_box =
+	    GTK_WIDGET(gtk_builder_get_object(builder, "display_box"));
+	build_display_tab(display_box);
+
+	GtkWidget *autostart_box =
+	    GTK_WIDGET(gtk_builder_get_object(builder, "autostart_box"));
+	build_autostart_tab(autostart_box);
+
 
 	gtk_window_set_application(GTK_WINDOW(window), app);
 	gtk_widget_show_all(window);

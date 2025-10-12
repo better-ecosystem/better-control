@@ -3,7 +3,7 @@
     border-radius: 8px;
     padding: 12px;
 }
-#material_frame {
+#frame {
     background-color: #FFFFFF;
     border-radius: 8px;
     padding: 12px;
@@ -16,7 +16,7 @@
     color: #212121;
     margin-bottom: 12px;
 }
-#network_row {
+#rows {
     background-color: #F5F5F5;
     border-radius: 6px;
     padding: 8px 12px;
@@ -24,7 +24,7 @@
     transition: background 0.2s;
 }
 
-#network_row:hover {
+#rows:hover {
     background-color: #E0E0E0;
 }
 
@@ -37,22 +37,17 @@
     color: #424242;
 }
 
-#network_row GtkLabel {
+#rows GtkLabel {
     font-size: 14px;
     color: #212121;
 }
 
-#network_row GtkLabel:last-child {
+#rows GtkLabel:last-child {
     font-size: 12px;
     color: #757575;
 }
 
-#volume_box #tab_header {
-    font-size: 18px;
-    font-weight: bold;
-    color: #212121;
-    margin-bottom: 12px;
-}
+
 
 notebook tab {
     border-radius: 8px;
@@ -67,5 +62,18 @@ notebook tab:checked {
 notebook tab:hover {
     background-color: #F5F5F5;
     color: #1976D2;
+}
+#error_label {
+    background-color: #FFF9C4; /* pale yellow cuz why not*/
+    border-radius: 6px;
+    border: 1px solid #FFEB3B;
+    padding: 6px 12px;
+    font-weight: bold;
+    color: #F57F17;
+    margin: 14px;
+}
+.frame-title-bold > label {
+    font-weight: bold;
+/*    font-size: 12pt; */
 }
 
