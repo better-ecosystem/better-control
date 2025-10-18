@@ -47,7 +47,11 @@
     color: #757575;
 }
 
-
+#tab_content {
+    padding: 16px; 
+    background-color: #FAFAFA;
+    border-radius: 8px;
+}
 
 notebook tab {
     border-radius: 8px;
