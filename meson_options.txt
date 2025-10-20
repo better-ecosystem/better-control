@@ -1,0 +1,2 @@
+option('network-tab', type: 'boolean', value: true)
+option('volume-tab', type: 'boolean', value: true)

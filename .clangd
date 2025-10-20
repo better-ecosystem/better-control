@@ -1,0 +1,36 @@
+CompileFlags:
+    Compiler: clang
+    Add:
+        - -std=c23
+        - -Wall
+        - -xc
+
+Completion:
+    AllScopes: Yes
+
+InlayHints:
+    ParameterNames: No
+    TypeNameLimit: 10
+    DeducedTypes: No
+    Designators: No
+
+Diagnostics:
+    UnusedIncludes: Strict
+    ClangTidy:
+        Add:
+            - bugprone-*
+            - performance-*
+            - readability-*
+            - modernize-*
+        Remove:
+            - readability-braces-around-statements
+            - readability-identifier-length
+            - readability-magic-numbers
+            - bugprone-easily-swappable-parameters
+            - readability-avoid-nested-conditional-operator
+            - readability-named-parameter
+            - bugprone-narrowing-conversions
+            - bugprone-casting-through-void
+
+Index:
+    Background: Build

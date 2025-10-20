@@ -1,0 +1,215 @@
+AccessModifierOffset: 0
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Left
+AlignConsecutiveAssignments:
+  Enabled:                   true
+  AcrossEmptyLines:          false
+  AcrossComments:            false
+  AlignCompound:             true
+  AlignFunctionPointers:     false
+  PadOperators:              false
+
+AlignConsecutiveBitFields:
+  Enabled:                   true
+  AcrossEmptyLines:          false
+  AcrossComments:            false
+  AlignCompound:             true
+  AlignFunctionPointers:     false
+  PadOperators:              false
+
+AlignConsecutiveDeclarations:
+  Enabled:                   true
+  AcrossEmptyLines:          false
+  AcrossComments:            false
+  AlignCompound:             true
+  AlignFunctionPointers:     false
+  PadOperators:              false
+
+AlignConsecutiveMacros:
+  Enabled:                   true
+  AcrossEmptyLines:          false
+  AcrossComments:            false
+  AlignCompound:             true
+  AlignFunctionPointers:     false
+  PadOperators:              false
+
+AlignConsecutiveShortCaseStatements:
+  Enabled:          true
+  AcrossEmptyLines: false
+  AcrossComments:   true
+  AlignCaseColons:  false
+
+# AlignConsecutiveTableGenBreakingDAGArgColons:
+#   Enabled:                   true
+#   AcrossEmptyLines:          false
+#   AcrossComments:            false
+#   AlignCompound:             true
+#   AlignFunctionPointers:     false
+#   PadOperators:              false
+
+AlignConsecutiveTableGenCondOperatorColons:
+  Enabled:                   true
+  AcrossEmptyLines:          false
+  AcrossComments:            false
+  AlignCompound:             true
+  AlignFunctionPointers:     false
+  PadOperators:              false
+
+AlignConsecutiveTableGenDefinitionColons:
+  Enabled:                   true
+  AcrossEmptyLines:          false
+  AcrossComments:            false
+  AlignCompound:             true
+  AlignFunctionPointers:     false
+  PadOperators:              false
+
+AlignEscapedNewlines:  Left
+AlignOperands:         AlignAfterOperator
+AlignTrailingComments: Always
+
+AllowAllArgumentsOnNextLine:               true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine:             Always
+AllowShortCaseExpressionOnASingleLine:     true
+AllowShortCaseLabelsOnASingleLine:         true
+AllowShortEnumsOnASingleLine:              true
+AllowShortFunctionsOnASingleLine:          All
+AllowShortIfStatementsOnASingleLine:       WithoutElse
+AllowShortLoopsOnASingleLine:              true
+AlwaysBreakBeforeMultilineStrings:         false
+
+BinPackArguments:     true
+BitFieldColonSpacing: Both
+
+BraceWrapping:
+  AfterCaseLabel:        true
+  AfterControlStatement: Always
+  AfterEnum:             true
+  AfterExternBlock:      true
+  AfterNamespace:        true
+  AfterObjCDeclaration:  true
+  AfterStruct:           true
+  AfterUnion:            true
+  BeforeCatch:           true
+  BeforeElse:            true
+  BeforeWhile:           false
+  IndentBraces:          false
+
+BreakAdjacentStringLiterals:       true
+BreakAfterAttributes:              Leave
+BreakAfterReturnType:              AllDefinitions
+BreakBeforeBinaryOperators:        All
+BreakBeforeBraces:                 Allman
+BreakBeforeInlineASMColon:         OnlyMultiline
+BreakBeforeTernaryOperators:       true
+BreakFunctionDefinitionParameters: false
+BreakStringLiterals:               true
+
+ColumnLimit:             80
+CommentPragmas:          '^ IWYU pragma:'
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle:    false
+DerivePointerAlignment:  false
+DisableFormat:           false
+ExperimentalAutoDetectBinPacking: false
+ForEachMacros:
+  - foreach
+  - Q_FOREACH
+  - BOOST_FOREACH
+  - wl_list_for_each
+IfMacros:
+  - KJ_IF_MAYBE
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<((assert|complex|ctype|errno|fenv|float|inttypes|iso646|limits|locale|math|setjmp|signal|stdalign|stdarg|stdatomic|stdbool|stddef|stdint|stdio|stdlib|string|tgmath|threads|time|uchar|wchar|wctype)\.h)>$'
+    Priority: 1
+
+  - Regex: '^<(sys/.*|pthread\.h|unistd\.h|dirent\.h|dlfcn\.h|netdb\.h|arpa/.*|netinet/.*)>$'
+    Priority: 2
+
+  - Regex: '^<[^>]+>$'
+    Priority: 4
+
+  - Regex: '^".*"$'
+    Priority: 5
+IncludeIsMainRegex: '(Test)?$'
+IncludeIsMainSourceRegex: ''
+
+IndentCaseBlocks:           true
+IndentCaseLabels:           false
+IndentExternBlock:          AfterExternBlock
+IndentGotoLabels:           false
+IndentPPDirectives:         None
+IndentRequiresClause:       true
+IndentWidth:                4
+IndentWrappedFunctionNames: false
+InsertBraces:               false
+InsertNewlineAtEOF:         true
+
+KeepEmptyLines:
+  AtEndOfFile:     true
+  AtStartOfBlock:  true
+  AtStartOfFile:   true
+
+LineEnding:          DeriveLF
+MacroBlockBegin:     ''
+MacroBlockEnd:       ''
+# MainIncludeChar:     AngleBracket
+MaxEmptyLinesToKeep: 2
+
+PenaltyBreakAssignment:               2
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment:                  300
+PenaltyBreakFirstLessLess:            120
+PenaltyBreakOpenParenthesis:          0
+PenaltyBreakScopeResolution:          500
+PenaltyBreakString:                   1000
+PenaltyBreakTemplateDeclaration:      10
+PenaltyExcessCharacter:               1000000
+PenaltyIndentedWhitespace:            0
+PenaltyReturnTypeOnItsOwnLine:        60
+
+PointerAlignment:   Right
+QualifierAlignment: Left
+
+PPIndentWidth:                    -1
+ReferenceAlignment:               Pointer
+ReflowComments:                   false
+RemoveParentheses:                Leave
+RemoveSemicolon:                  true
+SeparateDefinitionBlocks:         Leave
+SkipMacroDefinitionBody:          true
+SortIncludes:                     CaseSensitive
+SpaceAfterCStyleCast:             false
+SpaceAfterLogicalNot:             false
+SpaceAroundPointerQualifiers:     Default
+SpaceBeforeAssignmentOperators:   true
+SpaceBeforeCaseColon:             false
+SpaceBeforeParens:                ControlStatements
+
+SpaceBeforeParensOptions:
+  AfterControlStatements:       false
+  AfterForeachMacros:           false
+  AfterFunctionDefinitionName:  false
+  AfterFunctionDeclarationName: false
+  AfterIfMacros:                false
+  AfterOverloadedOperator:      false
+  AfterPlacementOperator:       true
+  AfterRequiresInClause:        false
+  AfterRequiresInExpression:    false
+  BeforeNonEmptyParentheses:    false
+
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets:         false
+SpaceInEmptyBlock:                 false
+SpacesBeforeTrailingComments:      1
+SpacesInAngles:                    false
+SpacesInContainerLiterals:         true
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
+
+SpacesInParens: Never
+SpacesInSquareBrackets: false
+
+Standard: Latest

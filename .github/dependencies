@@ -1,0 +1,5 @@
+libgtkmm-4.0-dev
+libjsoncpp-dev
+pkg-config
+clang
+lld

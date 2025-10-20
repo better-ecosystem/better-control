@@ -17,11 +17,14 @@ Expect broken code, missing features, and chaos.
 > [!IMPORTANT]
 > TL;DR: This is **NOT** for installation or casual use.
 
-## For Developers Only
+## How to build
 
 ```bash
 git clone https://github.com/better-ecosystem/better-control.git
 cd better-control
 git checkout c-rewrite
-gcc -std=c23 main.c wifi.c volume.c display.c autostart.c -o bc `pkg-config --cflags --libs gtk+-3.0`
-./bc
+
+meson setup builddir
+meson compile -C builddir
+./target/better-control
+```

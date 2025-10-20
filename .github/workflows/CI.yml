@@ -1,0 +1,67 @@
+name: CI
+
+on:
+    push:
+        paths:
+            - "**/meson.build"
+            - "**/meson_options.txt"
+            - "**/*.meson"
+            - ".github/workflows/*.yml"
+            - "**/*.cc"
+            - "**/*.hh"
+
+permissions:
+    contents: read
+
+jobs:
+    clang:
+        name: Build with Clang
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Cache pip
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-meson
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
+
+            - name: Install dependencies and Meson
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y python3-pip ninja-build
+                  pip3 install meson
+                  xargs -a .github/dependencies sudo apt-get install -y
+
+            - name: Compile
+              run: |
+                  CXX=clang++ CXX_LD=lld meson setup target
+                  meson compile -C target
+
+    gcc:
+        name: Build with GCC
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Cache pip
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-meson
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
+
+            - name: Install dependencies and Meson
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y python3-pip ninja-build
+                  pip3 install meson
+                  xargs -a .github/dependencies sudo apt-get install -y
+
+            - name: Compile
+              run: |
+                  CXX=g++ CXX_LD=bfd meson setup target
+                  meson compile -C target

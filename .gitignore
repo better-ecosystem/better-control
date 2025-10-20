@@ -1,1 +1,7 @@
-bc
+target*/*
+build*/*
+
+.cache*/*
+*.cache
+
+.vscode/
