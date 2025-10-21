@@ -29,7 +29,6 @@ create_tab(GHashTable *tabs, GtkBuilder *builder, const char *resource_path,
     tab->data = nullptr;
 
     new_func(tab);
-
     g_hash_table_insert(tabs, (void *)g_strdup(name), tab);
 }
 
