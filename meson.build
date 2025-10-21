@@ -8,24 +8,22 @@ project(
 )
 
 deps = [dependency('gtk+-3.0')]
+args = [
+    '-DAPP_VERSION="' + meson.project_version() + '"',
+    '-DAPP_NAME="' + meson.project_name() + '"',
+    '-DAPP_ID="org.BetterDE.Better-Control"',
+    '-DAPP_PREFIX="/org/BetterDE/Better-Control"',
+]
 
 if get_option('network-tab')
     deps += dependency('libnm')
+    args += '-DNETWORK_TAB'
 endif
 
 if get_option('volume-tab')
     deps += dependency('libpipewire-0.3')
+    args += '-DVOLUME_TAB'
 endif
-
-add_project_arguments(
-    [
-        '-DAPP_VERSION="' + meson.project_version() + '"',
-        '-DAPP_NAME="' + meson.project_name() + '"',
-        '-DAPP_ID="org.BetterDE.Better-Control"',
-        '-DAPP_PREFIX="/org/BetterDE/Better-Control"',
-    ],
-    language: 'c',
-)
 
 gnome = import('gnome')
 
@@ -42,5 +40,6 @@ executable(
     [source_files, data],
     include_directories: include_directories('include'),
     dependencies: deps,
+    c_args: args,
     install: true,
 )

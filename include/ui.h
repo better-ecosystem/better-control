@@ -6,6 +6,8 @@ struct TabWidget
 {
     void   *data; /* a pointer containing each tab's buffer data */
     GtkBox *box;
+
+    void (*destructor)(struct TabWidget *);
 };
 
 

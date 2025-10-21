@@ -2,6 +2,7 @@
 
 #include <gtk/gtk.h>
 
+#include "tabs/volume.h"
 #include "ui.h"
 
 
@@ -17,19 +18,23 @@ load_css()
 }
 
 
+typedef void (*TabFunc)(struct TabWidget *);
+
 static void
 create_tab(GHashTable *tabs, GtkBuilder *builder, const char *resource_path,
-           const char *name)
+           const char *name, TabFunc new_func)
 {
     struct TabWidget *tab = g_new(struct TabWidget, 1);
     tab->box  = GTK_BOX(gtk_builder_get_object(builder, resource_path));
     tab->data = nullptr;
 
+    new_func(tab);
+
     g_hash_table_insert(tabs, (void *)g_strdup(name), tab);
 }
 
-#define CREATE_TAB(tab, builder, resource_path) \
-    create_tab((tab), (builder), APP_PREFIX resource_path, (resource_path))
+#define CREATE_TAB(tab, builder, name) \
+    create_tab((tab), (builder), APP_PREFIX #name, (#name), name##_tab_new)
 
 
 void
@@ -49,11 +54,10 @@ app_on_activate(GtkApplication *app, struct AppData *data)
 
     gtk_window_set_application(widgets->window, app);
 
-
-    CREATE_TAB(widgets->tabs, builder, "autostart");
-    CREATE_TAB(widgets->tabs, builder, "display");
-    CREATE_TAB(widgets->tabs, builder, "network");
-    CREATE_TAB(widgets->tabs, builder, "volume");
+    // CREATE_TAB(widgets->tabs, builder, autostart);
+    // CREATE_TAB(widgets->tabs, builder, display);
+    // CREATE_TAB(widgets->tabs, builder, network);
+    CREATE_TAB(widgets->tabs, builder, volume);
     g_object_unref(builder);
 
     data->widgets = widgets;
