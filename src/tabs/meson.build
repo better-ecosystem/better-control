@@ -6,5 +6,6 @@ if get_option('network-tab')
 endif
 
 if get_option('volume-tab')
-    tab_source_files = files('volume.c')
+    tab_source_files += files('volume_logic.c')
+    tab_source_files += files('volume.c')
 endif
