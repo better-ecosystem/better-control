@@ -176,9 +176,7 @@ class BetterControl(Gtk.Window):
         self.connect("destroy", self.on_destroy)
         self.notebook.connect("switch-page", self.on_tab_switched)
         
-        # Register SIGUSR1 signal handler for toggling window visibility
-        self.logging.log(LogLevel.Debug, "Adding SIGUSR1 signal handler...")
-        signal.signal(signal.SIGUSR1, self.handle_signal)
+        signal.signal(signal.SIGUSR1, self.signal_handler)
 
     def create_lazy_tabs(self):
         """Create placeholder tabs with loading indicators that will be replaced with real content"""
@@ -1321,22 +1319,16 @@ class BetterControl(Gtk.Window):
             Gtk.main_quit()
         return False  # Let other handlers process the event
 
-    def handle_signal(self, signum, frame):
-        """Handle SIGUSR1 signal - schedule GTK operation on main thread"""
-        self.logging.log(LogLevel.Debug, f"Received SIGUSR1 signal (signum={signum})")
+    def signal_handler(self, sig, frame):
+        """Handle SIGUSR1 signal - toggle window visibility on main thread"""
         
         def toggle_window_visibility():
-            """Toggle window visibility (runs on GTK main thread)"""
-            try:
-                if self.get_property("visible"):
-                    self.hide()
-                else:
-                    self.show()
-            except Exception as e:
-                self.logging.log(LogLevel.Error, f"Error toggling window visibility: {e}")
+            if self.get_property("visible"):
+                self.hide()
+            else:
+                self.show()
             return False  # Only run once
         
-        # Schedule GTK operations on the main thread
         GLib.idle_add(toggle_window_visibility)
 
     def on_destroy(self, window):
