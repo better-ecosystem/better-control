@@ -8,6 +8,7 @@ import sys
 import json
 import os
 from datetime import datetime
+import signal
 
 from tools.bluetooth import BluetoothManager
 from utils.arg_parser import ArgParse
@@ -174,6 +175,8 @@ class BetterControl(Gtk.Window):
 
         self.connect("destroy", self.on_destroy)
         self.notebook.connect("switch-page", self.on_tab_switched)
+        
+        signal.signal(signal.SIGUSR1, self.signal_handler)
 
     def create_lazy_tabs(self):
         """Create placeholder tabs with loading indicators that will be replaced with real content"""
@@ -1315,6 +1318,18 @@ class BetterControl(Gtk.Window):
             self.logging.log(LogLevel.Info, "Application quitted")
             Gtk.main_quit()
         return False  # Let other handlers process the event
+
+    def signal_handler(self, sig, frame):
+        """Handle SIGUSR1 signal - toggle window visibility on main thread"""
+        
+        def toggle_window_visibility():
+            if self.get_property("visible"):
+                self.hide()
+            else:
+                self.show()
+            return False  # Only run once
+        
+        GLib.idle_add(toggle_window_visibility)
 
     def on_destroy(self, window):
         """Thread-safe window destruction with initialization check"""
