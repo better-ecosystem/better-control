@@ -25,7 +25,7 @@ from ui.tabs.volume_tab import VolumeTab
 from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
 from ui.tabs.usbguard_tab import USBGuardTab
-from utils.settings import load_settings, save_settings
+from utils.settings import load_settings, save_settings, read_tab_from_file
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
 from utils.translations import Translation, get_translations
@@ -1226,7 +1226,15 @@ class BetterControl(Gtk.Window):
             if self.get_property("visible"):
                 self.hide()
             else:
+                active_tab = read_tab_from_file()
+
+                if active_tab and active_tab in self.tab_pages:
+                    page_num = self.tab_pages[active_tab]
+                    self.notebook.set_current_page(page_num)
+                    GLib.idle_add(lambda: self.lazy_load_tab(self.notebook, None, page_num))
+
                 self.show()
+
             return False  # Only run once
         
         GLib.idle_add(toggle_window_visibility)
