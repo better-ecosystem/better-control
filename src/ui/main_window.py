@@ -559,85 +559,14 @@ class BetterControl(Gtk.Window):
                 active_tab = None
 
             # Set active tab based on command line arguments
-            if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
-                page_num = self.tab_pages["Volume"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Volume (page {page_num})")
+            requested_tab = tab_name_from_arguments(self.arg_parser)
+            if requested_tab and requested_tab in self.tab_pages:
+                page_num = self.tab_pages[requested_tab]
+                self.logging.log(LogLevel.Info, f"Setting active tab to {requested_tab} (page {page_num})")
                 self.notebook.set_current_page(page_num)
-                active_tab = "Volume"
+                active_tab = requested_tab
                 if self.minimal_mode:
-                    self.set_title(f"Better Control - Volume")
-            elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
-                page_num = self.tab_pages["Wi-Fi"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Wi-Fi (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "Wi-Fi"
-                if self.minimal_mode:
-                    self.set_title(f"Better Control - Wi-Fi")
-            elif (
-                self.arg_parser.find_arg(("-a", "--autostart"))
-                and "Autostart" in self.tab_pages
-            ):
-                page_num = self.tab_pages["Autostart"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Autostart (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "Autostart"
-                if self.minimal_mode:
-                    translated_tab_name = self.tab_name_mapping.get("Autostart", "Autostart") if hasattr(self, 'tab_name_mapping') else "Autostart"
-                    self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-b", "--bluetooth"))
-                and "Bluetooth" in self.tab_pages
-            ):
-                page_num = self.tab_pages["Bluetooth"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Bluetooth (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "Bluetooth"
-                if self.minimal_mode:
-                    translated_tab_name = self.tab_name_mapping.get("Bluetooth", "Bluetooth") if hasattr(self, 'tab_name_mapping') else "Bluetooth"
-                    self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-B", "--battery"))
-                and "Battery" in self.tab_pages
-            ):
-                page_num = self.tab_pages["Battery"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Battery (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "Battery"
-                if self.minimal_mode:
-                    translated_tab_name = self.tab_name_mapping.get("Battery", "Battery") if hasattr(self, 'tab_name_mapping') else "Battery"
-                    self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-d", "--display"))
-                and "Display" in self.tab_pages
-            ):
-                page_num = self.tab_pages["Display"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "Display"
-                if self.minimal_mode:
-                    translated_tab_name = self.tab_name_mapping.get("Display", "Display") if hasattr(self, 'tab_name_mapping') else "Display"
-                    self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-u", "--usbguard"))
-                and "USBGuard" in self.tab_pages
-            ):
-                page_num = self.tab_pages["USBGuard"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to USBGuard (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "USBGuard"
-                if self.minimal_mode:
-                    translated_tab_name = self.tab_name_mapping.get("USBGuard", "USBGuard") if hasattr(self, 'tab_name_mapping') else "USBGuard"
-                    self.set_title(f"Better Control - {translated_tab_name}")
-            elif (
-                self.arg_parser.find_arg(("-p", "--power"))
-                and "Power" in self.tab_pages
-            ):
-                page_num = self.tab_pages["Power"]
-                self.logging.log(LogLevel.Info, f"Setting active tab to Power (page {page_num})")
-                self.notebook.set_current_page(page_num)
-                active_tab = "Power"
-                if self.minimal_mode:
-                    translated_tab_name = self.tab_name_mapping.get("Power", "Power") if hasattr(self, 'tab_name_mapping') else "Power"
+                    translated_tab_name = self.tab_name_mapping.get(requested_tab, requested_tab) if hasattr(self, 'tab_name_mapping') else requested_tab
                     self.set_title(f"Better Control - {translated_tab_name}")
             else:
                 # Default to first tab instead of using last active tab from settings
