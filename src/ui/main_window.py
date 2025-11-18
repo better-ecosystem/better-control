@@ -1139,17 +1139,14 @@ class BetterControl(Gtk.Window):
             if self.get_property("visible"):
                 self.hide()
             else:
-                def switch_to_tab_from_file():
-                    active_tab = read_tab_from_file()
-
-                    if active_tab and active_tab in self.tab_pages:
-                        page_num = self.tab_pages[active_tab]
-                        self.notebook.set_current_page(page_num)
-                        self.lazy_load_tab(self.notebook, None, page_num)
-
-                GLib.idle_add(switch_to_tab_from_file)
-
                 self.show()
+
+                active_tab = read_tab_from_file()
+
+                if active_tab and active_tab in self.tab_pages:
+                    page_num = self.tab_pages[active_tab]
+                    self.notebook.set_current_page(page_num)
+                    GLib.idle_add(lambda: self.lazy_load_tab(self.notebook, None, page_num))
 
             return False  # Only run once
         
