@@ -12,6 +12,7 @@ import signal
 
 from tools.bluetooth import BluetoothManager
 from utils.arg_parser import ArgParse
+from utils.tab_name import tab_name_from_arguments
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
@@ -221,24 +222,7 @@ class BetterControl(Gtk.Window):
         visibility = self.settings.get("visibility", {})
 
         # Determine active tab (command line args > first visible)
-        active_tab = None
-        # Check command line args first
-        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
-            active_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")):
-            active_tab = "Wi-Fi"
-        elif self.arg_parser.find_arg(("-a", "--autostart")):
-            active_tab = "Autostart"
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
-            active_tab = "Bluetooth"
-        elif self.arg_parser.find_arg(("-B", "--battery")):
-            active_tab = "Battery"
-        elif self.arg_parser.find_arg(("-d", "--display")):
-            active_tab = "Display"
-        elif self.arg_parser.find_arg(("-p", "--power")):
-            active_tab = "Power"
-        elif self.arg_parser.find_arg(("-u", "--usbguard")):
-            active_tab = "USBGuard"
+        active_tab = tab_name_from_arguments(self.arg_parser)
         
         # If no args specified, use first visible tab
         if active_tab is None:

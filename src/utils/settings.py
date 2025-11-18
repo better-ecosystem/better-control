@@ -2,7 +2,9 @@
 
 import json
 import os
+from utils.arg_parser import ArgParse
 from utils.logger import LogLevel, Logger
+from utils.tab_name import tab_name_from_arguments
 
 CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
@@ -106,4 +108,5 @@ def save_settings(settings: dict, logging: Logger) -> bool:
 def read_tab_from_file():
     if os.path.exists(TAB_FILE):
         with open(TAB_FILE, 'r', encoding='utf-8') as file:
-            return file.read().strip()
+            arg_parser = ArgParse(["better-control"] + file.read().split(" "))
+            return tab_name_from_arguments(arg_parser)
