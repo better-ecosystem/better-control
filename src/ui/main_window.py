@@ -217,27 +217,6 @@ class BetterControl(Gtk.Window):
         # Define tab order from user settings or default
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
 
-        # Default initial tab to first in saved tab order
-        requested_tab = tab_order[0] if tab_order else "Volume"
-
-        # Override with command-line args if specified
-        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
-            requested_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")):
-            requested_tab = "Wi-Fi"
-        elif self.arg_parser.find_arg(("-a", "--autostart")):
-            requested_tab = "Autostart"
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
-            requested_tab = "Bluetooth"
-        elif self.arg_parser.find_arg(("-B", "--battery")):
-            requested_tab = "Battery"
-        elif self.arg_parser.find_arg(("-d", "--display")):
-            requested_tab = "Display"
-        elif self.arg_parser.find_arg(("-p", "--power")):
-            requested_tab = "Power"
-        elif self.arg_parser.find_arg(("-u", "--usbguard")):
-            requested_tab = "USBGuard"
-
         # Load saved tab visibility settings
         visibility = self.settings.get("visibility", {})
 
@@ -298,32 +277,6 @@ class BetterControl(Gtk.Window):
                 self.tab_pages[tab_name] = page_num
                 self.notebook.set_current_page(page_num)
 
-        # Determine active tab (command line args > first visible)
-        active_tab = None
-        # Check command line args first
-        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
-            active_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")):
-            active_tab = "Wi-Fi"
-        elif self.arg_parser.find_arg(("-a", "--autostart")):
-            active_tab = "Autostart"
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
-            active_tab = "Bluetooth"
-        elif self.arg_parser.find_arg(("-B", "--battery")):
-            active_tab = "Battery"
-        elif self.arg_parser.find_arg(("-d", "--display")):
-            active_tab = "Display"
-        elif self.arg_parser.find_arg(("-p", "--power")):
-            active_tab = "Power"
-        elif self.arg_parser.find_arg(("-u", "--usbguard")):
-            active_tab = "USBGuard"
-        
-        # If no args specified, use first visible tab
-        if active_tab is None:
-            visible_tabs = [name for name in tab_order if visibility.get(name, True)]
-            if visible_tabs:
-                active_tab = visible_tabs[0]
-
         # Load active tab immediately if found
         if active_tab and active_tab in self.tab_pages:
             page_num = self.tab_pages[active_tab]
@@ -332,59 +285,6 @@ class BetterControl(Gtk.Window):
 
         # Connect switch-page to lazy load other tabs
         self.notebook.connect("switch-page", self.lazy_load_tab)
-
-        # Start background threads to preload other tabs asynchronously
-        def preload_tab(tab_name):
-            def worker():
-                try:
-                    tab_class = self.tab_classes.get(tab_name)
-                    if not tab_class:
-                        return
-                    tab_instance = tab_class(self.logging, self.txt)
-                    tab_instance.show_all()
-
-                    def replace_placeholder():
-                        # Double-check placeholder still exists
-                        current_widget = self.tabs.get(tab_name)
-                        from ui.tabs.bluetooth_tab import BluetoothTab
-                        from ui.tabs.wifi_tab import WiFiTab
-                        from ui.tabs.display_tab import DisplayTab
-                        from ui.tabs.battery_tab import BatteryTab
-                        from ui.tabs.power_tab import PowerTab
-                        from ui.tabs.autostart_tab import AutostartTab
-                        from ui.tabs.usbguard_tab import USBGuardTab
-                        from ui.tabs.volume_tab import VolumeTab
-
-                        real_tab_classes = (BluetoothTab, WiFiTab, DisplayTab, BatteryTab, PowerTab, AutostartTab, USBGuardTab, VolumeTab)
-
-                        if isinstance(current_widget, real_tab_classes):
-                            return False  # Already replaced
-
-                        # Replace placeholder with real tab
-                        page_num = self.tab_pages.get(tab_name)
-                        if page_num is None:
-                            return False
-                        try:
-                            self.notebook.remove_page(page_num)
-                            new_page_num = self.notebook.insert_page(
-                                tab_instance,
-                                self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
-                                page_num
-                            )
-                            self.tabs[tab_name] = tab_instance
-                            self.tab_pages[tab_name] = new_page_num
-                            self.logging.log(LogLevel.Info, f"Preloaded tab: {tab_name}")
-                            self.show_all()
-                        except Exception as e:
-                            self.logging.log(LogLevel.Error, f"Failed to preload tab {tab_name}: {e}")
-                        return False  # Only run once
-
-                    GLib.idle_add(replace_placeholder)
-                except Exception as e:
-                    self.logging.log(LogLevel.Error, f"Error preloading tab {tab_name}: {e}")
-
-            thread = threading.Thread(target=worker, daemon=True)
-            thread.start()
 
         def delayed_preload():
             # Skip preloading other tabs in minimal mode
