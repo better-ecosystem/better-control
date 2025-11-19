@@ -2,14 +2,11 @@
 
 import json
 import os
-from utils.arg_parser import ArgParse
 from utils.logger import LogLevel, Logger
-from utils.tab_name import tab_name_from_arguments
 
 CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
 SETTINGS_FILE = os.path.join(CONFIG_PATH, "settings.json")
-TAB_FILE = os.path.join(CONFIG_PATH, "tab.txt")
 
 def ensure_config_dir(logging: Logger) -> None:
     """Ensure the config directory exists
@@ -104,9 +101,3 @@ def save_settings(settings: dict, logging: Logger) -> bool:
         except:
             pass
         return False
-
-def read_tab_from_file():
-    if os.path.exists(TAB_FILE):
-        with open(TAB_FILE, 'r', encoding='utf-8') as file:
-            arg_parser = ArgParse(["better-control"] + file.read().split(" "))
-            return tab_name_from_arguments(arg_parser)

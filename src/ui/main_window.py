@@ -12,7 +12,7 @@ import signal
 
 from tools.bluetooth import BluetoothManager
 from utils.arg_parser import ArgParse
-from utils.tab_name import tab_name_from_arguments
+from utils.tab_name import read_tab_from_file, tab_name_from_arguments
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
@@ -26,7 +26,7 @@ from ui.tabs.volume_tab import VolumeTab
 from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
 from ui.tabs.usbguard_tab import USBGuardTab
-from utils.settings import load_settings, save_settings, read_tab_from_file
+from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
 from utils.translations import Translation, get_translations
