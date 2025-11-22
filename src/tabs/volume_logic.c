@@ -24,6 +24,9 @@ struct VolumeLogicContext
 
     struct spa_hook registry_listener;
 
+    struct pw_metadata *metadata;
+    struct spa_hook     metadata_listener;
+
     GPtrArray *interfaces;
     GPtrArray *interface_datas;
 };
@@ -42,9 +45,24 @@ pipewire_loop_source_dispatch(GSource *source, GSourceFunc callback,
     return TRUE;
 }
 
-static GSourceFuncs pipewire_source_funcs = {
+static GSourceFuncs PIPEWIRE_SOURCE_FUNC = {
     .dispatch = pipewire_loop_source_dispatch,
 };
+
+
+static int
+metadata_event_property(gpointer data, guint32 subject, const char *key,
+                        const char *type, const char *value)
+{
+    struct VolumeLogicContext *ctx = data;
+    g_print("volume update, subject = %u, value = %s\n", subject, value);
+
+    return 0;
+}
+
+
+static const struct pw_metadata_events METADATA_EVENTS
+    = { PW_VERSION_METADATA_EVENTS, .property = metadata_event_property };
 
 
 static void
@@ -54,7 +72,20 @@ registry_global(gpointer data, guint32 id, guint32 perms, const char *type,
     struct VolumeLogicContext *ctx = data;
 
     if (g_str_equal(type, PW_TYPE_INTERFACE_Client)) {}
-    if (g_str_equal(type, PW_TYPE_INTERFACE_Metadata)) {}
+    if (g_str_equal(type, PW_TYPE_INTERFACE_Metadata))
+    {
+        const char *name = spa_dict_lookup(props, PW_KEY_METADATA_NAME);
+        if (!name) return;
+
+        if (!g_str_equal(name, "route-settings")) return;
+
+        ctx->metadata = pw_registry_bind(ctx->registry, id, type, version, 0);
+
+        spa_zero(ctx->metadata_listener);
+        pw_metadata_add_listener(ctx->metadata, &ctx->metadata_listener,
+                                 &METADATA_EVENTS, ctx);
+        return;
+    }
     if (g_str_equal(type, PW_TYPE_INTERFACE_Node))
     {
         const char *media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
@@ -115,7 +146,7 @@ volume_logic_init_pw(struct VolumeLogicContext **context)
     pw_init(nullptr, nullptr);
 
     ctx->source = (struct PipewireSource *)g_source_new(
-        &pipewire_source_funcs, sizeof(struct PipewireSource));
+        &PIPEWIRE_SOURCE_FUNC, sizeof(struct PipewireSource));
 
     ctx->source->loop = pw_loop_new(nullptr);
     if (ctx->source->loop == nullptr)
@@ -196,8 +227,7 @@ volume_logic_init(struct VolumeLogicContext **ctx)
 {
     if (!volume_logic_init_pw(ctx)) return;
 
-    (*ctx)->interfaces
-        = g_ptr_array_new();
+    (*ctx)->interfaces      = g_ptr_array_new();
     (*ctx)->interface_datas = g_ptr_array_new();
 }
 
@@ -205,10 +235,17 @@ volume_logic_init(struct VolumeLogicContext **ctx)
 void
 volume_logic_deinit(struct VolumeLogicContext *ctx)
 {
+    if (ctx->metadata)
+    {
+        spa_hook_remove(&ctx->metadata_listener);
+        pw_proxy_destroy((struct pw_proxy *)ctx->metadata);
+    }
+
     pw_core_disconnect(ctx->core);
     pw_context_destroy(ctx->context);
     pw_loop_destroy(ctx->source->loop);
     g_main_loop_unref(ctx->main_loop);
+
 
     g_ptr_array_free(ctx->interfaces, FALSE);
     g_ptr_array_free(ctx->interface_datas, FALSE);
