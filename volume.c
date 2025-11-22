@@ -129,7 +129,7 @@ static void rebuild_app_list(GtkWidget *box, gboolean is_input) {
 		    g_str_has_prefix(line, "Source Output #")) {
 			if (index != -1 && volume >= 0) {
 				GtkWidget *row =
-				    gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+				    gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
 				gtk_widget_set_name(row, "rows");
 
 				GtkWidget *label = gtk_label_new(app_name);
@@ -201,11 +201,32 @@ static void rebuild_app_list(GtkWidget *box, gboolean is_input) {
 					volume = atoi(num_start);
 				}
 			}
+		} else if (strstr(line, "media.name = ")) {
+			char *eq = strchr(line, '=');
+			if (eq) {
+				char *start = eq + 1;
+				while (*start == ' ' || *start == '\t') start++;
+				if (*start == '"') {
+					start++;
+					char *end = strchr(start, '"');
+					if (end) {
+						int len = end - start;
+						if (len > 0 &&
+						    len <
+							(int)sizeof(app_name) -
+							    1) {
+							strncpy(app_name, start,
+								len);
+							app_name[len] = '\0';
+						}
+					}
+				}
+			}
 		}
 	}
 
 	if (index != -1 && volume >= 0) {
-		GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+		GtkWidget *row = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
 		gtk_widget_set_name(row, "rows");
 
 		GtkWidget *label = gtk_label_new(app_name);
