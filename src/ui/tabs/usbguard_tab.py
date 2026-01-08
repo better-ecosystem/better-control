@@ -307,7 +307,7 @@ class USBGuardTab(Gtk.Box):
             status = parts[1]
             device_info = " ".join(parts[2:])
 
-            # Parse device info for displa
+            # Parse device info for display
             try:
                 device_name = "Device name cannot be retrieved"
 
@@ -327,7 +327,7 @@ class USBGuardTab(Gtk.Box):
                     "reject": "🚫 Rejected"
                 }.get(status.lower(), f"({status})")
 
-                # Create formatted display text with device name as primary identfier
+                # Create formatted display text with device name as primary identifier
                 display_text = f"""
 <b>{device_name}</b>
 ID: {device_id}

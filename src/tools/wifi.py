@@ -150,7 +150,7 @@ def get_network_details(logging: Logger) -> Dict[str, str]:
         if not connection_name or not device_name:
             return details
 
-        # Get IP addres
+        # Get IP address
         ip_result = subprocess.run(
             ["nmcli", "-t", "-f", "IP4.ADDRESS", "device", "show", device_name],
             capture_output=True,
