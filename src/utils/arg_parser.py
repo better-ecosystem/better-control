@@ -5,7 +5,7 @@ from tools.terminal import term_support_color
 
 
 def sprint(file: Optional[TextIO], *args) -> None:
-    """a 'print' statement macro with the 'file' parameter placed on the beggining
+    """a 'print' statement macro with the 'file' parameter placed on the beginning
 
     Args:
         file (Optional[TextIO]): the file stream to output to
@@ -22,7 +22,7 @@ class ArgParse:
         previous_arg_type: str = ""
 
         # ? This makes sure that detecting -ai as -a -i works
-        # ? and also makes it not dependant on a lot of string operations
+        # ? and also makes it not dependent on a lot of string operations
         for i, arg in enumerate(args):
             if i == 0:
                 self.__bin = arg

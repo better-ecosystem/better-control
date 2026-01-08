@@ -18,7 +18,7 @@ def get_volume(logging: Logger) -> int:
         output = subprocess.getoutput("pactl get-sink-volume @DEFAULT_SINK@")
 
         if output == "":
-            logging.log(LogLevel.Error, "pactl couldnt get volume!")
+            logging.log(LogLevel.Error, "pactl couldn't get volume!")
             return 0
 
         volume = int(output.split("/")[1].strip().strip("%"))

@@ -10,7 +10,7 @@ If you wish to contribute with translation for the app into your language, pleas
 
 step 1  : adding translations in `utils/translations.py`
 
-step 2 : goto `src/better_control.py` and add your langauge as follows by editing this part
+step 2 : goto `src/better_control.py` and add your language as follows by editing this part
 
 ```
 def load_language_and_translations(arg_parser, logger):
@@ -46,6 +46,6 @@ step 4 : change to new version
 goto `betterctl.sh` and `src/ui/main_window.py` and change the old version to new 
  eg: `6.11.6` --> `6.11.7`
 
-> If you cant find the line with the version just search for the last version and you can find it
+> If you can't find the line with the version just search for the last version and you can find it
 
 
