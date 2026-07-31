@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # A simple script to install or uninstall Better Control on your OS
 clear
-echo -e "\e[32mBetter Control Manager\e[0m"
-echo -e "your version : \e[34m6.12.2\e[0m"
+printf '\033[32mBetter Control Manager\033[0m\n'
+printf 'your version : \033[34m6.12.2\033[0m\n'
 echo " "
-echo -e "This script is still under development to improve it if you find any errors head over to \e[31m\e[1mhttps://github.com/better-ecosystem/better-control/issues\e[0m and open an issue on it"
+printf 'This script is still under development to improve it if you find any errors head over to \033[31m\033[1mhttps://github.com/better-ecosystem/better-control/issues\033[0m and open an issue on it\n'
 echo " "
 
 set -e
@@ -17,7 +17,7 @@ install_arch() {
         makepkg -si --noconfirm
         rm -rf ~/better-control-git
         clear
-        echo -e "\e[1m\e[4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
+        printf '\033[1m\033[4m✅ Installation complete. You can run Better Control using the command '\''control'\'' or open the better-control app.\033[0m\n'
 }
 
 install_debian() {
@@ -31,7 +31,7 @@ install_debian() {
     sudo make install
     rm -rf ~/better-control
     clear
-    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
+    printf '\033[1m4m✅ Installation complete. You can run Better Control using the command '\''control'\'' or open the better-control app.\033[0m\n'
 }
 
 install_fedora() {
@@ -47,7 +47,7 @@ install_fedora() {
     sudo make install
     rm -rf ~/better-control
     clear
-    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
+    printf '\033[1m4m✅ Installation complete. You can run Better Control using the command '\''control'\'' or open the better-control app.\033[0m\n'
 }
 
 install_void() {
@@ -60,7 +60,7 @@ install_void() {
     sudo make install
     rm -rf ~/better-control
     clear
-    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
+    printf '\033[1m4m✅ Installation complete. You can run Better Control using the command '\''control'\'' or open the better-control app.\033[0m\n'
 }
 
 install_alpine() {
@@ -74,7 +74,7 @@ install_alpine() {
     sudo make install
     rm -rf ~/better-control
     clear
-    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
+    printf '\033[1m4m✅ Installation complete. You can run Better Control using the command '\''control'\'' or open the better-control app.\033[0m\n'
 }
 
 uninstall_arch() {
@@ -105,7 +105,8 @@ detect_os() {
 confirm() {
     # Prompt for yes/no confirmation
     while true; do
-        read -p "$1 [y/n]: " yn
+        printf '%s [y/n]: ' "$1"
+        read -r yn
         case $yn in
             [Yy]* ) return 0;;
             [Nn]* ) return 1;;
@@ -114,11 +115,11 @@ confirm() {
     done
 }
 
-echo -e "\e[1mDo you want to install or uninstall or update Better Control?\e0"
-echo -e "\e[32m 0) Install\e[0m"
-echo -e "\e[32m 1) Uninstall\e[0m"
-echo -e "\e[32m 2) Update\e[0m"
-echo -e "\e[3myour answer:\e0"
+printf '\033[1mDo you want to install or uninstall or update Better Control?\0330\n'
+printf '\033[32m 0) Install\033[0m\n'
+printf '\033[32m 1) Uninstall\033[0m\n'
+printf '\033[32m 2) Update\033[0m\n'
+printf '\033[3myour answer:\0330\n'
 read -r choice
 
 case "$choice" in

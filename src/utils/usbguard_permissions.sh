@@ -1,16 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env sh
 ############################# 
 # This script is run when user presses "give permission" button on usbguard tab
 #############################
 
 # USBGuard Permission Setup Script (Improved)
-set -euo pipefail
+set -eu
 
 echo "=== USBGuard Permission Setup ==="
 echo "This will configure your system to allow USBGuard access."
 
 # Verify root
-if [[ "$EUID" -ne 0 ]]; then
+if [ "$(id -u)" -ne 0 ]; then
     echo "Please run this script with sudo or as root."
     exit 1
 fi
@@ -35,7 +35,7 @@ usermod -aG usbguard "$USER_NAME"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-usbguard.rules"
 RULE='SUBSYSTEM=="usb", MODE="0660", TAG+="uaccess"'
 
-if [[ -f "$UDEV_RULE_FILE" ]]; then
+if [ -f "$UDEV_RULE_FILE" ]; then
     if grep -Fxq "$RULE" "$UDEV_RULE_FILE"; then
         echo "udev rule already present."
     else

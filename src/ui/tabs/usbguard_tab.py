@@ -853,8 +853,8 @@ Status: {status_text}
     def automate(self, widget):
         try:
             subprocess.run([
-                "pkexec", "bash", "-c",
-                "curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/src/utils/usbguard_permissions.sh | bash"
+                "pkexec", "sh", "-c",
+                "curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/src/utils/usbguard_permissions.sh | sh"
             ], check=True)
         except subprocess.CalledProcessError as e:
             if hasattr(self.logging, 'log_error'):

@@ -20,7 +20,7 @@ install:
 	cp -r src/* $(INSTALL_DIR)/
 
 	# Create and install the better-control executable script
-	@echo "#!/bin/bash" > better-control
+	@echo "#!/usr/bin/env sh" > better-control
 	@echo "python3 $(PREFIX)/share/better-control/better_control.py \$$@" >> better-control
 	chmod +x better-control
 	cp better-control $(BIN_DIR)/better-control
