@@ -1,18 +1,5 @@
 <div align="center">
 
-# ⚙️ Better Control
-
-<img src="https://github.com/user-attachments/assets/3ae2383d-971b-4280-bd64-6c6c18dd05de" width="900">
-
-### *A sleek GTK-themed control panel for Linux* 🐧
-
-[![AUR Package](https://img.shields.io/badge/AUR-better--control--git-429768?style=flat-square&logo=archlinux&logoColor=white&labelColor=444)](https://aur.archlinux.org/packages/better-control-git)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-429768.svg?style=flat-square&logo=github&labelColor=444)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/better-ecosystem/better-control?style=flat-square&color=429768&logo=starship&labelColor=444)](https://github.com/better-ecosystem/better-control/stargazers)
-[![Latest Release](https://img.shields.io/github/v/release/better-ecosystem/better-control.svg?style=flat-square&color=429768&logo=speedtest&label=latest-release&labelColor=444)](https://github.com/better-ecosystem/better-control/releases/latest)
-
-</div>
-
 ---
 
 > [!IMPORTANT]
@@ -35,23 +22,23 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 ### Core Dependencies
 
-| Dependency | Purpose |
-|------------|---------|
-| **GTK 3** | UI framework |
+| Dependency                 | Purpose                                                         |
+| -------------------------- | --------------------------------------------------------------- |
+| **GTK 3**            | UI framework                                                    |
 | **Python Libraries** | python-gobject, python-dbus, python-psutil, python-setproctitle |
 
 ### Feature-Specific Dependencies
 
-| Feature | Required Packages |
-|---------|------------------|
-| **Wi-Fi Management** | NetworkManager, python-qrcode |
-| **Bluetooth** | BlueZ & BlueZ Utils |
-| **Audio Control** | PipeWire or PulseAudio |
-| **Brightness** | brightnessctl |
-| **Power Management** | power-profiles-daemon, upower |
-| **Blue Light Filter** | gammastep |
-| **USBGuard** | USBGuard |
-| **Pillow** | For QR Code on Wi-Fi |
+| Feature                     | Required Packages             |
+| --------------------------- | ----------------------------- |
+| **Wi-Fi Management**  | NetworkManager, python-qrcode |
+| **Bluetooth**         | BlueZ & BlueZ Utils           |
+| **Audio Control**     | PipeWire or PulseAudio        |
+| **Brightness**        | brightnessctl                 |
+| **Power Management**  | power-profiles-daemon, upower |
+| **Blue Light Filter** | gammastep                     |
+| **USBGuard**          | USBGuard                      |
+| **Pillow**            | For QR Code on Wi-Fi          |
 
 > [!TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
@@ -71,6 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/better-ecosystem/better-control/ref
 ```
 
 **What this script does:**
+
 - Uses [AUR](https://aur.archlinux.org/packages/better-control-git) for Arch-based distributions
 - Uses [Makefile](https://github.com/better-ecosystem/better-control/blob/main/Makefile) for other distributions
 - Automatically installs all required dependencies
@@ -79,6 +67,7 @@ curl -fsSL https://raw.githubusercontent.com/better-ecosystem/better-control/ref
 > **Security conscious?** You can review the installer script [here](https://raw.githubusercontent.com/better-ecosystem/better-control/refs/heads/main/betterctl.sh) before running it.
 
 **Supported Distributions:**
+
 - 🔵 Arch-based (Arch, Manjaro, EndeavourOS, etc.)
 - 🟠 Debian-based (Ubuntu, Linux Mint, Pop!_OS, etc.)
 - 🔴 Fedora-based (Fedora, openSUSE, etc.)
@@ -112,6 +101,7 @@ Better Control is available in the official Void Linux repository.
 ```bash
 xbps-install -S better-control
 ```
+
 </details>
 
 <details>
@@ -156,10 +146,10 @@ You can use `betterctl` to update or uninstall the application.
 
 ### Keybindings
 
-| Keybinding | Action |
-|------------|--------|
-| `Shift + S` | Open Settings Dialog |
-| `Q` or `Ctrl + Q` | Quit Application |
+| Keybinding            | Action               |
+| --------------------- | -------------------- |
+| `Shift + S`         | Open Settings Dialog |
+| `Q` or `Ctrl + Q` | Quit Application     |
 
 ---
 
