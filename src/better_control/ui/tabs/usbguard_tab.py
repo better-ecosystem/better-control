@@ -12,7 +12,7 @@ class USBGuardTab(Gtk.Box):
         self.logging = logging
         self.txt = txt
         self.previous_devices = None  # Initialize as None to skip first refresh
-        from better_control.utils.hidden_devices import HiddenDevices
+        from better_control.utils.devices import HiddenDevices
         self.hidden_devices = HiddenDevices(logging)
         self.manual_operations = set()  # Track devices being manually allowed/blocked
         self.set_margin_start(10)

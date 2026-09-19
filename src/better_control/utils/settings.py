@@ -1,103 +1,106 @@
 #!/usr/bin/env python3
 
+import argparse
 import json
 import os
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+from better_control.utils.atomic_write import atomic_write
 from better_control.utils.logger import LogLevel, Logger
 
-CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
-CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
-SETTINGS_FILE = os.path.join(CONFIG_PATH, "settings.json")
 
-def ensure_config_dir(logging: Logger) -> None:
-    """Ensure the config directory exists
-
-    Args:
-        logging (Logger): Logger instance
-    """
-    try:
-        logging.log(LogLevel.Info, f"Ensuring config directory exists at {CONFIG_PATH}")
-        os.makedirs(CONFIG_PATH, exist_ok=True)
-        logging.log(LogLevel.Info, "Config directory check complete")
-    except Exception as e:
-        logging.log(LogLevel.Error, f"Error creating config directory: {e}")
-
-def load_settings(logging: Logger) -> dict:
-    """Load settings from the settings file with validation"""
-    ensure_config_dir(logging)
-    default_settings = {
+class Config:
+    DEFAULT_CONFIG: dict[str, Any] = {
         "visibility": {},
         "positions": {},
         "usbguard_hidden_devices": [],
         "language": "en",
         "vertical_tabs": False,
-        "vertical_tabs_icon_only": False
+        "vertical_tabs_icon_only": False,
     }
 
-    if not os.path.exists(SETTINGS_FILE):
-        logging.log(LogLevel.Info, "Using default settings (file not found)")
-        return default_settings
+    @staticmethod
+    def add_arguments(parser: argparse.ArgumentParser) -> None:
+        group = parser.add_argument_group("Configuration")
+        group.add_argument(
+            "--config-dir", type=Path, help="Override the config directory used."
+        )
 
-    try:
-        with open(SETTINGS_FILE, 'r') as f:
-            content = f.read().strip()
-            if not content.startswith('{'):
-                content = '{' + content  # Fix malformed JSON
-            settings = json.loads(content)
-            logging.log(LogLevel.Info, f"Loaded settings from {SETTINGS_FILE}")
+    def __init__(self, logger: Logger, args: argparse.Namespace):
+        self.config_dir = Path()
+        self.__logger = logger
 
-        if not isinstance(settings, dict):
-            logging.log(LogLevel.Warn, "Invalid settings format - using defaults")
-            return default_settings
+        if args.config_dir != None:
+            self.config_dir = args.config_dir
+        else:
+            xdg_config_home: str | None = os.environ.get("XDG_CONFIG_HOME")
+            if xdg_config_home == None:
+                xdg_config_home = os.path.expanduser("~/.config")
+                self.__logger.log(
+                    LogLevel.Warn,
+                    f"$XDG_CONFIG_HOME is not set, using default value {xdg_config_home}",
+                )
+            self.config_dir = os.path.join(xdg_config_home, "better-control")
 
-        for key in default_settings:
-            if key not in settings:
-                settings[key] = default_settings[key]
-                logging.log(LogLevel.Info, f"Added missing setting: {key}")
+        self.__config_file = Path(os.path.join(self.config_dir, "settings.json"))
 
-        return settings
+    def ensure_config_dir_exists(self) -> None:
+        if os.path.exists(self.__config_file):
+            return
 
-    except Exception as e:
-        logging.log(LogLevel.Error, f"Error loading settings: {e}")
-        return default_settings
+        directory = self.__config_file.parent
 
-def save_settings(settings: dict, logging: Logger) -> bool:
-    """Save settings to the settings file with atomic write and validation"""
-    try:
-        ensure_config_dir(logging)
+        self.__logger.log(
+            LogLevel.Info,
+            f"Config directory ({directory}) doesn't exist, creating one.",
+        )
 
-        if not isinstance(settings, dict):
-            logging.log(LogLevel.Error, "Invalid settings - not a dictionary")
-            return False
+        directory.mkdir(parents=True, exist_ok=True)
 
-        default_settings = {
-            "visibility": {},
-            "positions": {},
-            "usbguard_hidden_devices": [],
-            "language": "en",
-            "vertical_tabs": False,
-            "vertical_tabs_icon_only": False
-        }
-        for key in default_settings:
-            if key not in settings:
-                settings[key] = default_settings[key]
+    def load(self) -> dict[str, Any]:
+        self.__config: dict[str, Any] = deepcopy(Config.DEFAULT_CONFIG)
 
-        temp_path = SETTINGS_FILE + '.tmp'
-        with open(temp_path, 'w') as f:
-            json.dump(settings, f, indent=4)
+        if not self.__config_file.exists():
+            return self.__config
 
-
-        with open(temp_path, 'r') as f:
-            json.load(f)
-
-        os.replace(temp_path, SETTINGS_FILE)
-        logging.log(LogLevel.Info, f"Settings saved successfully to {SETTINGS_FILE}")
-        return True
-
-    except Exception as e:
-        logging.log(LogLevel.Error, f"Error saving settings: {e}")
         try:
-            if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.unlink(temp_path)
-        except:
-            pass
-        return False
+            with open(self.__config_file, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+
+            if not isinstance(settings, dict):
+                self.__logger.log(LogLevel.Warn, "Invalid settings format, using defaults")
+                return self.__config
+
+            for key, default in Config.DEFAULT_CONFIG.items():
+                if key not in settings:
+                    settings[key] = default
+                    self.__logger.log(LogLevel.Info, f"Added missing setting: {key}")
+
+            self.__config = settings
+
+            self.__logger.log(LogLevel.Info, f"Loaded settings from {self.__config_file}")
+
+            return self.__config
+
+        except (OSError, json.JSONDecodeError) as e:
+            self.__logger.log(LogLevel.Error, f"Error loading settings: {e}")
+            return self.__config
+
+    def save(self) -> bool:
+        try:
+            for key, default in Config.DEFAULT_CONFIG.items():
+                if key not in self.__config:
+                    self.__config[key] = default
+
+            self.ensure_config_dir_exists()
+            atomic_write(self.__config_file, lambda f: json.dump(self.__config, f)) # type: ignore
+
+            self.__logger.log(
+                LogLevel.Info, f"Successfully saved settings to {self.__config_file}"
+            )
+            return True
+
+        except Exception as e:
+            self.__logger.log(LogLevel.Error, f"Error saving settings: {e}")
+            return False

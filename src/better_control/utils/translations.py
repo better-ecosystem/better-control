@@ -13,11 +13,11 @@ Usage in tab files:
             # Use txt for translations
 """
 
+import argparse
 import os
-from logging import Logger
 from typing import Protocol, Optional
 
-from better_control.utils.logger import LogLevel
+from better_control.utils.logger import LogLevel, Logger
 
 
 class Translation(Protocol):
@@ -1861,7 +1861,7 @@ def _map_system_lang_to_code(system_lang: str, logger: Optional[Logger] = None) 
         return "en"
 
 
-def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Translation:
+def get_translations(logger: Logger, lang: str = "en") -> Translation:
     """Load the language according to the selected language
 
     Args:
@@ -1877,20 +1877,20 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
         if env_lang is None:
             # No LANG env var set, fall back to English immediately
             system_lang_code = "en"
-            if logging:
-                logging.log(
+            if logger:
+                logger.log(
                     LogLevel.Info, "Environment variable LANG not set, falling back to English")
         else:
             # LANG env var exists
             parts = env_lang.split("_")
             system_lang_code = parts[0].lower()
-            if logging:
-                logging.log(
+            if logger:
+                logger.log(
                     LogLevel.Info, f"Using system language: {system_lang_code} from $LANG={env_lang}")
-        lang = _map_system_lang_to_code(system_lang_code, logging)
+        lang = _map_system_lang_to_code(system_lang_code, logger)
 
-    if logging:
-        logging.log(LogLevel.Info, f"Using language: {lang}")
+    if logger:
+        logger.log(LogLevel.Info, f"Using language: {lang}")
 
     match lang:
         case "ru":
@@ -1911,3 +1911,8 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
             return German()
         case _:
             return English()
+
+def add_arguments(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_argument_group("Translation")
+
+    group.add_argument("-L", "--language", choices=["en", "es", "pt", "fr", "id", "it", "tr", "de", "ru"])

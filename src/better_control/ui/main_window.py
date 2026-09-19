@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import logging
 import traceback
 import gi  # type: ignore
@@ -11,7 +12,6 @@ from datetime import datetime
 import signal
 
 from better_control.tools.bluetooth import BluetoothManager
-from better_control.utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
@@ -25,7 +25,7 @@ from better_control.ui.tabs.volume_tab import VolumeTab
 from better_control.ui.tabs.wifi_tab import WiFiTab
 from better_control.ui.tabs.settings_tab import SettingsTab
 from better_control.ui.tabs.usbguard_tab import USBGuardTab
-from better_control.utils.settings import load_settings, save_settings
+from better_control.utils.settings import Config
 from better_control.utils.logger import LogLevel, Logger
 from better_control.ui.css.animations import load_animations_css  # animate_widget_show not used
 from better_control.utils.translations import Translation, get_translations
@@ -33,8 +33,7 @@ from better_control.tools.globals import check_hardware_support
 
 
 class BetterControl(Gtk.Window):
-
-    def __init__(self, txt: Translation, arg_parser: ArgParse, logging: Logger) -> None:
+    def __init__(self, txt: Translation, args: argparse.Namespace, logger: Logger) -> None:
         # Initialize cache directory
         self.cache_dir = os.path.expanduser("~/.cache/better-control")
         os.makedirs(self.cache_dir, exist_ok=True)
