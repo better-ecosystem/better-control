@@ -2,7 +2,7 @@
 
 import gi
 
-from better_control.utils.translations import English, Spanish # type: ignore
+from better_control.translations import English, Spanish # type: ignore
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")

@@ -5,7 +5,7 @@ import qrcode
 import subprocess
 from typing import List, Dict
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 import time
 import threading
 

@@ -2,8 +2,8 @@
 
 import gi  # type: ignore
 
-from better_control.utils.logger import LogLevel, Logger
-from better_control.utils.translations import English, Spanish
+from better_control.logger import LogLevel, Logger
+from better_control.translations import English, Spanish
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk # type: ignore

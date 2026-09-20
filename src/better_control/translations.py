@@ -15,9 +15,9 @@ Usage in tab files:
 
 import argparse
 import os
-from typing import Protocol, Optional
+from typing import Protocol
 
-from better_control.utils.logger import LogLevel, Logger
+from logging import Logger
 
 
 class Translation(Protocol):
@@ -26,6 +26,7 @@ class Translation(Protocol):
     This provides type hints without needing to import all language classes.
     All language classes should implement these properties and methods.
     """
+
     # Common properties that all translations must have
     msg_desc: str
     msg_app_url: str
@@ -77,7 +78,9 @@ class English:
         self.msg_args_wifi = "Starts with the wifi tab open"
 
         self.msg_args_log = "The program will either log to a file if given a file path,\n or output to stdout based on the log level if given a value between 0, and 3."
-        self.msg_args_redact = "Redact sensitive information from logs (network names, device IDs, etc.)"
+        self.msg_args_redact = (
+            "Redact sensitive information from logs (network names, device IDs, etc.)"
+        )
         self.msg_args_size = "Sets a custom window size"
 
         # commonly used
@@ -254,7 +257,9 @@ class English:
         self.settings_title = "Settings"
         self.settings_tab_settings = "Tab Settings"
         self.settings_language = "Language"
-        self.settings_language_changed_restart = "Please restart the application for the language change to take effect."
+        self.settings_language_changed_restart = (
+            "Please restart the application for the language change to take effect."
+        )
         self.settings_language_changed = "Language changed"
 
 
@@ -282,7 +287,9 @@ class Russian:
         self.msg_args_force = "Принуждает приложение запускаться только в случае, если установлены все зависимости"
         self.msg_args_power = "При запуске, открывает вкладку управления питанием"
         self.msg_args_volume = "При запуске, открывает вкладку управления громкостью"
-        self.msg_args_volume_v = "Также, при запуске, открывает вкладку управления громкостью"
+        self.msg_args_volume_v = (
+            "Также, при запуске, открывает вкладку управления громкостью"
+        )
         self.msg_args_wifi = "При запуске, открывает вкладку управления сетями Wi-Fi"
 
         self.msg_args_log = "Программа либо выведет логи в файл, если таков указан,\n либо в stdout на основе уровня логов от 0 до 3"
@@ -417,7 +424,9 @@ class Russian:
         self.volume_mute_speaker = "Заглушить динамики"
         self.volume_unmute_speaker = "Отключить глушение динамиков"
         self.volume_quick_presets = "Быстрые преднастройки"
-        self.volume_output_combo_tooltip = "Выберите устройство вывода для этого приложения"
+        self.volume_output_combo_tooltip = (
+            "Выберите устройство вывода для этого приложения"
+        )
 
         # Volume tab microphone translations
         self.microphone_tab_microphone = "Микрофон"
@@ -434,7 +443,9 @@ class Russian:
         self.app_output_unmute = "Отключить глушение"
         self.app_output_tab_tooltip = "Параметры вывода приложения"
         self.app_output_no_apps = "Ни в одном приложении не проигрывается аудио"
-        self.app_output_dropdown_tooltip = "Выберите устройство выбора для этого приложения"
+        self.app_output_dropdown_tooltip = (
+            "Выберите устройство выбора для этого приложения"
+        )
 
         # Volume tab App input translations
         self.app_input_title = "Ввод приложения"
@@ -463,7 +474,9 @@ class Russian:
         self.settings_title = "Параметры"
         self.settings_tab_settings = "Параметры вкладок"
         self.settings_language = "Язык"
-        self.settings_language_changed_restart = "Перезапустите приложение для смены языка."
+        self.settings_language_changed_restart = (
+            "Перезапустите приложение для смены языка."
+        )
         self.settings_language_changed = "Язык изменён"
 
 
@@ -488,14 +501,18 @@ class German:
         self.msg_args_battery = "Startet die Anwendung mit dem Batterie-Tab"
         self.msg_args_bluetooth = "Startet die Anwendung mit dem Bluetooth-Tab"
         self.msg_args_display = "Startet die Anwendung mit dem Display-Tab"
-        self.msg_args_force = "Zwingt die Anwendung dazu alle Abhängigkeiten installiert zu haben"
+        self.msg_args_force = (
+            "Zwingt die Anwendung dazu alle Abhängigkeiten installiert zu haben"
+        )
         self.msg_args_power = "Startet die Anwendung mit dem Power-Tab"
         self.msg_args_volume = "Startet die Anwendung mit dem Lautstärke-Tab"
         self.msg_args_volume_v = "Startet die Anwendung ebenfalls mit dem Bluetooth-Tab"
         self.msg_args_wifi = "Startet die Anwendung mit dem WLAN-Tab"
 
         self.msg_args_log = "Das Programm schreibt das Log an den angegeben Pfad,\n oder an stdout basierend auf dem Log-Level, wenn ein Wert zwischen 0 und 3 angegeben wird."
-        self.msg_args_redact = "Entfernt sesible Daten aus dem Log (Netzwerknamen, Geräte IDs, usw.)"
+        self.msg_args_redact = (
+            "Entfernt sesible Daten aus dem Log (Netzwerknamen, Geräte IDs, usw.)"
+        )
         self.msg_args_size = "Legt eine benutzerdefinierte Fenstergröße fest"
 
         # commonly used
@@ -530,7 +547,9 @@ class German:
         self.operation_failed = "Operation fehlgeschlagen"
         self.policy_error = "Laden der Richtliene fehlgeschlagen"
         self.permanent_allow = "Dauerhaft erlauben"
-        self.permanent_allow_tooltip = "Gerät dauerhaft erlauben (Hinzufügen zur Richtliene)"
+        self.permanent_allow_tooltip = (
+            "Gerät dauerhaft erlauben (Hinzufügen zur Richtliene)"
+        )
         self.msg_tab_battery = "Akku"
         self.msg_tab_bluetooth = "Bluetooth"
         self.msg_tab_display = "Bildschirm"
@@ -644,7 +663,9 @@ class German:
         self.app_input_title = "App Aufnahme"
         self.app_input_volume = "Anwendungs Aufnahmelautstärke"
         self.app_input_mute = "Mikrofon für diese Anwenung Stummschalten"
-        self.app_input_unmute = "Stummschaltung des Mikrofons für diese Anwendung aufheben"
+        self.app_input_unmute = (
+            "Stummschaltung des Mikrofons für diese Anwendung aufheben"
+        )
         self.app_input_tab_tooltip = "Anwenungsaufnahme Einstellungen"
         self.app_input_no_apps = "Keine Anwenungen die Ton aufzeichenen"
 
@@ -699,7 +720,9 @@ class Italian:
         self.msg_args_wifi = "Avvia con la scheda del wifi aperta"
 
         self.msg_args_log = "Il programma creerà un log se gli viene fornito un percorso,\n altrimenti invierà l'output su stdout in base al livello di log, con un valore compreso tra 0 e 3."
-        self.msg_args_redact = "Elimina le informazioni sensibili dai registri (reti, ID dei device, etc.)"
+        self.msg_args_redact = (
+            "Elimina le informazioni sensibili dai registri (reti, ID dei device, etc.)"
+        )
         self.msg_args_size = "Imposta una dimensione personalizzata della finestra"
 
         # commonly used
@@ -734,7 +757,9 @@ class Italian:
         self.operation_failed = "Operazione fallita"
         self.policy_error = "Errore nel caricamento della policy"
         self.permanent_allow = "Permesso permanentemente"
-        self.permanent_allow_tooltip = "Consenti permanentemente questo dispositivo (lo aggiunge alla policy)"
+        self.permanent_allow_tooltip = (
+            "Consenti permanentemente questo dispositivo (lo aggiunge alla policy)"
+        )
         self.msg_tab_battery = "Batteria"
         self.msg_tab_bluetooth = "Bluetooth"
         self.msg_tab_display = "Schermo"
@@ -745,9 +770,13 @@ class Italian:
         # Autostart tab translations
         self.autostart_title = "Applicazioni lanciate all'avvio"
         self.autostart_session = "Sessione"
-        self.autostart_show_system_apps = "Mostra le applicazioni di sistema lanciate all'avvio"
+        self.autostart_show_system_apps = (
+            "Mostra le applicazioni di sistema lanciate all'avvio"
+        )
         self.autostart_configured_applications = "Applicazioni configurate"
-        self.autostart_tooltip_rescan = "Scansiona nuovamente le applicazioni lanciate all'avvio"
+        self.autostart_tooltip_rescan = (
+            "Scansiona nuovamente le applicazioni lanciate all'avvio"
+        )
 
         # Battery tab translations
         self.battery_title = "Pannello di controllo della batteria"
@@ -768,7 +797,9 @@ class Italian:
         self.bluetooth_available_devices = "Dispositivi disponibili"
         self.bluetooth_tooltip_refresh = "Scansiona per trovare dispositivi"
         self.bluetooth_connect_failed = "Errore durante la connessione al dispositivo"
-        self.bluetooth_disconnect_failed = "Errore durante la disconnessione dal dispositivo"
+        self.bluetooth_disconnect_failed = (
+            "Errore durante la disconnessione dal dispositivo"
+        )
         self.bluetooth_try_again = "Perfavore riprova."
 
         # Display tab translations
@@ -825,7 +856,9 @@ class Italian:
         self.volume_mute_speaker = "Muta altoparlanti"
         self.volume_unmute_speaker = "Smuta altoparlanti"
         self.volume_quick_presets = "Impostazioni rapide"
-        self.volume_output_combo_tooltip = "Seleziona il dispositivo d'uscita per questa applicazione"
+        self.volume_output_combo_tooltip = (
+            "Seleziona il dispositivo d'uscita per questa applicazione"
+        )
 
         # Volume tab microphone translations
         self.microphone_tab_microphone = "Microfono"
@@ -842,7 +875,9 @@ class Italian:
         self.app_output_unmute = "Smuta"
         self.app_output_tab_tooltip = "Impostazioni dell'output dell'app"
         self.app_output_no_apps = "Nessuna applicazione sta riproducendo audio"
-        self.app_output_dropdown_tooltip = "Seleziona il dispositivo d'uscita di questa applicazione"
+        self.app_output_dropdown_tooltip = (
+            "Seleziona il dispositivo d'uscita di questa applicazione"
+        )
 
         # Volume tab App input translations
         self.app_input_title = "Ingresso app"
@@ -871,7 +906,9 @@ class Italian:
         self.settings_title = "Impostazioni"
         self.settings_tab_settings = "Impostazioni delle schede"
         self.settings_language = "Lingua"
-        self.settings_language_changed_restart = "Perfavore riavvia l'applicazione affinchè venga ricaricata la lingua."
+        self.settings_language_changed_restart = (
+            "Perfavore riavvia l'applicazione affinchè venga ricaricata la lingua."
+        )
         self.settings_language_changed = "Lingua cambiata"
 
 
@@ -890,7 +927,9 @@ class Spanish:
         self.msg_args_battery = "Inicia con la pestaña de batería abierta"
         self.msg_args_bluetooth = "Inicia con la pestaña de bluetooth abierta"
         self.msg_args_display = "Inicia con la pestaña de pantalla abierta"
-        self.msg_args_force = "Fuerza la aplicación a iniciar sin todas las dependencias"
+        self.msg_args_force = (
+            "Fuerza la aplicación a iniciar sin todas las dependencias"
+        )
         self.msg_args_power = "Inicia con la pestaña de energía abierta"
         self.msg_args_volume = "Inicia con la pestaña de volumen abierta"
         self.msg_args_volume_v = "También inicia con la pestaña de volumen abierta"
@@ -1009,7 +1048,9 @@ class Spanish:
         self.volume_speaker_volume = "Volumen de Altavoces"
         self.volume_mute_speaker = "Silenciar Altavoces"
         self.volume_unmute_speaker = "Activar Altavoces"
-        self.volume_output_combo_tooltip = "Seleccionar dispositivo de salida para esta aplicación"
+        self.volume_output_combo_tooltip = (
+            "Seleccionar dispositivo de salida para esta aplicación"
+        )
         self.volume_quick_presets = "Preajustes Rápidos"
 
         # Volume tab microphone translations
@@ -1027,7 +1068,9 @@ class Spanish:
         self.app_output_unmute = "Activar"
         self.app_output_tab_tooltip = "Configuración de Salida de Aplicaciones"
         self.app_output_no_apps = "No hay aplicaciones reproduciendo audio"
-        self.app_output_dropdown_tooltip = "Seleccionar dispositivo de salida para esta aplicación"
+        self.app_output_dropdown_tooltip = (
+            "Seleccionar dispositivo de salida para esta aplicación"
+        )
 
         # Volume tab App input translations
         self.app_input_title = "Entrada de Aplicaciones"
@@ -1195,7 +1238,9 @@ class Portuguese:
         self.volume_mute_speaker = "Silenciar Alto-falantes"
         self.volume_unmute_speaker = "Ativar Alto-falantes"
         self.volume_quick_presets = "Predefinições Rápidas"
-        self.volume_output_combo_tooltip = "Selecionar dispositivo de saída para este aplicativo"
+        self.volume_output_combo_tooltip = (
+            "Selecionar dispositivo de saída para este aplicativo"
+        )
 
         # Volume tab microphone translations
         self.microphone_tab_microphone = "Microfone"
@@ -1212,7 +1257,9 @@ class Portuguese:
         self.app_output_unmute = "Ativar"
         self.app_output_tab_tooltip = "Configurações de Saída de Aplicativos"
         self.app_output_no_apps = "Nenhum aplicativo reproduzindo áudio"
-        self.app_output_dropdown_tooltip = "Selecionar dispositivo de saída para este aplicativo"
+        self.app_output_dropdown_tooltip = (
+            "Selecionar dispositivo de saída para este aplicativo"
+        )
 
         # Volume tab App input translations
         self.app_input_title = "Entrada de Aplicativos"
@@ -1241,7 +1288,9 @@ class Portuguese:
         self.settings_title = "Configurações"
         self.settings_tab_settings = "Configurações de Abas"
         self.settings_language = "Idioma"
-        self.settings_language_changed_restart = "Por favor reinicie o aplicativo para que a mudança de idioma tenha efeito."
+        self.settings_language_changed_restart = (
+            "Por favor reinicie o aplicativo para que a mudança de idioma tenha efeito."
+        )
         self.settings_language_changed = "Idioma alterado"
 
 
@@ -1256,11 +1305,15 @@ class French:
 
         # for args
         self.msg_args_help = "Affiche ce message"
-        self.msg_args_autostart = "Démarre avec l'onglet de démarrage automatique ouvert"
+        self.msg_args_autostart = (
+            "Démarre avec l'onglet de démarrage automatique ouvert"
+        )
         self.msg_args_battery = "Démarre avec l'onglet de batterie ouvert"
         self.msg_args_bluetooth = "Démarre avec l'onglet bluetooth ouvert"
         self.msg_args_display = "Démarre avec l'onglet d'affichage ouvert"
-        self.msg_args_force = "Force l'application à démarrer sans toutes les dépendances"
+        self.msg_args_force = (
+            "Force l'application à démarrer sans toutes les dépendances"
+        )
         self.msg_args_power = "Démarre avec l'onglet d'alimentation ouvert"
         self.msg_args_volume = "Démarre avec l'onglet de volume ouvert"
         self.msg_args_volume_v = "Démarre également avec l'onglet de volume ouvert"
@@ -1380,7 +1433,9 @@ class French:
         self.volume_mute_speaker = "Couper les Haut-parleurs"
         self.volume_unmute_speaker = "Activer les Haut-parleurs"
         self.volume_quick_presets = "Préréglages Rapides"
-        self.volume_output_combo_tooltip = "Sélectionner le périphérique de sortie pour cette application"
+        self.volume_output_combo_tooltip = (
+            "Sélectionner le périphérique de sortie pour cette application"
+        )
 
         # Volume tab microphone translations
         self.microphone_tab_microphone = "Microphone"
@@ -1397,7 +1452,9 @@ class French:
         self.app_output_unmute = "Activer"
         self.app_output_tab_tooltip = "Paramètres de Sortie d'Applications"
         self.app_output_no_apps = "Aucune application ne joue de l'audio"
-        self.app_output_dropdown_tooltip = "Sélectionner le périphérique de sortie pour cette application"
+        self.app_output_dropdown_tooltip = (
+            "Sélectionner le périphérique de sortie pour cette application"
+        )
 
         # Volume tab App input translations
         self.app_input_title = "Entrée d'Applications"
@@ -1452,7 +1509,9 @@ class Indonesian:
         self.msg_args_wifi = "Memulai aplikasi dengan tab WiFI terbuka"
 
         self.msg_args_log = "Aplikasi akan mengeluarkan log ke sebuah file jika diberi sebuah file path,\n atau mengeluarkan output ke stdout jika diberikan nilai antara 0, dan 3."
-        self.msg_args_redact = "Menyunting informasi sensitif dari log. (nama jaringan, ID perankat, dst.)"
+        self.msg_args_redact = (
+            "Menyunting informasi sensitif dari log. (nama jaringan, ID perankat, dst.)"
+        )
         self.msg_args_size = "Menetapkan ukuran Window kustom"
 
         # commonly used
@@ -1611,7 +1670,9 @@ class Indonesian:
         self.settings_title = "Pengaturan"
         self.settings_tab_settings = "Pengaturan Tab"
         self.settings_language = "Bahasa"
-        self.settings_language_changed_restart = "Mulai ulang aplikasi agar perubahan bahasa diterapkan."
+        self.settings_language_changed_restart = (
+            "Mulai ulang aplikasi agar perubahan bahasa diterapkan."
+        )
         self.settings_language_changed = "Bahasa telah diubah"
 
 
@@ -1642,7 +1703,9 @@ class Turkish:
         self.msg_args_volume_v = "Ayrıca ses sekmesi açık olarak başlar"
         self.msg_args_wifi = "Wi-Fi sekmesi açık olarak başlar"
         self.msg_args_log = "Program bir dosya yolu verilirse log dosyasına yazar,\n veya 0 ile 3 arasında bir değer verilirse stdout'a yazar."
-        self.msg_args_redact = "Loglardan hassas bilgileri gizle (ağ adları, cihaz kimlikleri, vb.)"
+        self.msg_args_redact = (
+            "Loglardan hassas bilgileri gizle (ağ adları, cihaz kimlikleri, vb.)"
+        )
         self.msg_args_size = "Özel bir pencere boyutu ayarlar"
 
         # commonly used
@@ -1677,7 +1740,9 @@ class Turkish:
         self.operation_failed = "İşlem başarısız oldu"
         self.policy_error = "Politika yüklenemedi"
         self.permanent_allow = "Kalıcı İzin Ver"
-        self.permanent_allow_tooltip = "Bu cihaza kalıcı olarak izin ver (politikaya eklenir)"
+        self.permanent_allow_tooltip = (
+            "Bu cihaza kalıcı olarak izin ver (politikaya eklenir)"
+        )
         self.msg_tab_battery = "Pil"
         self.msg_tab_bluetooth = "Bluetooth"
         self.msg_tab_display = "Ekran"
@@ -1688,7 +1753,9 @@ class Turkish:
         # Autostart tab translations
         self.autostart_title = "Otomatik Başlatma Uygulamaları"
         self.autostart_session = "Oturum"
-        self.autostart_show_system_apps = "Sistem otomatik başlatma uygulamalarını göster"
+        self.autostart_show_system_apps = (
+            "Sistem otomatik başlatma uygulamalarını göster"
+        )
         self.autostart_configured_applications = "Yapılandırılmış Uygulamalar"
         self.autostart_tooltip_rescan = "Otomatik başlatma uygulamalarını yeniden tara"
 
@@ -1813,51 +1880,47 @@ class Turkish:
         self.settings_title = "Ayarlar"
         self.settings_tab_settings = "Sekme Ayarları"
         self.settings_language = "Dil"
-        self.settings_language_changed_restart = "Dil değişikliği için lütfen uygulamayı yeniden başlatın."
+        self.settings_language_changed_restart = (
+            "Dil değişikliği için lütfen uygulamayı yeniden başlatın."
+        )
         self.settings_language_changed = "Dil değiştirildi"
 
 
-def _map_system_lang_to_code(system_lang: str, logger: Optional[Logger] = None) -> str:
+def _map_system_lang_to_code(system_lang: str, logger: Logger) -> str:
     """Helper function to map system language to supported code and optionally log mapping"""
     if system_lang.startswith("es"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
+            logger.info(f"System language '{system_lang}' mapped to Spanish (es)")
         return "es"
     if system_lang.startswith("it"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to Italian (it)")
+            logger.info(f"System language '{system_lang}' mapped to Italian (it)")
         return "it"
     elif system_lang.startswith("pt"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
+            logger.info(f"System language '{system_lang}' mapped to Portuguese (pt)")
         return "pt"
     elif system_lang.startswith("fr"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to French (fr)")
+            logger.info(f"System language '{system_lang}' mapped to French (fr)")
         return "fr"
     elif system_lang.startswith("id"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to Indonesian (id)")
+            logger.info(f"System language '{system_lang}' mapped to Indonesian (id)")
         return "id"
     elif system_lang.startswith("tr"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to Turkish (tr)")
+            logger.info(f"System language '{system_lang}' mapped to Turkish (tr)")
         return "tr"
     elif system_lang.startswith("de"):
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' mapped to German (de)")
+            logger.info(f"System language '{system_lang}' mapped to German (de)")
         return "de"
     else:
         if logger:
-            logger.log(
-                LogLevel.Info, f"System language '{system_lang}' not supported, falling back to English (en)")
+            logger.info(
+                f"System language '{system_lang}' not supported, falling back to English (en)"
+            )
         return "en"
 
 
@@ -1878,19 +1941,21 @@ def get_translations(logger: Logger, lang: str = "en") -> Translation:
             # No LANG env var set, fall back to English immediately
             system_lang_code = "en"
             if logger:
-                logger.log(
-                    LogLevel.Info, "Environment variable LANG not set, falling back to English")
+                logger.info(
+                    "Environment variable LANG not set, falling back to English"
+                )
         else:
             # LANG env var exists
             parts = env_lang.split("_")
             system_lang_code = parts[0].lower()
             if logger:
-                logger.log(
-                    LogLevel.Info, f"Using system language: {system_lang_code} from $LANG={env_lang}")
+                logger.info(
+                    f"Using system language: {system_lang_code} from $LANG={env_lang}"
+                )
         lang = _map_system_lang_to_code(system_lang_code, logger)
 
     if logger:
-        logger.log(LogLevel.Info, f"Using language: {lang}")
+        logger.info(f"Using language: {lang}")
 
     match lang:
         case "ru":
@@ -1912,7 +1977,12 @@ def get_translations(logger: Logger, lang: str = "en") -> Translation:
         case _:
             return English()
 
+
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     group = parser.add_argument_group("Translation")
 
-    group.add_argument("-L", "--language", choices=["en", "es", "pt", "fr", "id", "it", "tr", "de", "ru"])
+    group.add_argument(
+        "-L",
+        "--language",
+        choices=["en", "es", "pt", "fr", "id", "it", "tr", "de", "ru"],
+    )

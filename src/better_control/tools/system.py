@@ -5,7 +5,7 @@ import shutil
 import psutil
 from typing import List, Optional, Dict, Tuple
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 
 def check_dependency(

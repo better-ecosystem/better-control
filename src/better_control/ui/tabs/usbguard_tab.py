@@ -3,8 +3,8 @@
 import subprocess
 import threading
 from gi.repository import Gtk, GLib , Gdk # type: ignore
-from better_control.utils.logger import LogLevel
-from better_control.utils.translations import get_translations
+from better_control.logger import LogLevel
+from better_control.translations import get_translations
 
 class USBGuardTab(Gtk.Box):
     def __init__(self, logging, txt):
@@ -12,7 +12,7 @@ class USBGuardTab(Gtk.Box):
         self.logging = logging
         self.txt = txt
         self.previous_devices = None  # Initialize as None to skip first refresh
-        from better_control.utils.devices import HiddenDevices
+        from better_control.devices import HiddenDevices
         self.hidden_devices = HiddenDevices(logging)
         self.manual_operations = set()  # Track devices being manually allowed/blocked
         self.set_margin_start(10)

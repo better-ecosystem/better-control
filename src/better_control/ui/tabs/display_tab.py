@@ -3,13 +3,13 @@
 import gi  # type: ignore
 import subprocess
 
-from better_control.utils.logger import LogLevel, Logger
-from better_control.utils.translations import Translation
+from better_control.logger import LogLevel, Logger
+from better_control.translations import Translation
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
 
-from better_control.utils.settings import load_settings, save_settings
+from better_control.config import load_settings, save_settings
 from better_control.tools.display import get_brightness, get_displays, set_brightness
 from better_control.tools.globals import get_current_session
 

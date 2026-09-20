@@ -2,13 +2,13 @@
 
 import gi
 
-from better_control.utils.logger import LogLevel, Logger
-from better_control.utils.translations import English, Spanish, Portuguese, French  # type: ignore
+from better_control.logger import LogLevel, Logger
+from better_control.translations import English, Spanish, Portuguese, French  # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject  # type: ignore
 
-from better_control.utils.settings import load_settings, save_settings
+from better_control.config import load_settings, save_settings
 
 
 class SettingsTab(Gtk.Box):

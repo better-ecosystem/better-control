@@ -1,5 +1,5 @@
 import subprocess
-from better_control.utils.logger import Logger, LogLevel
+from better_control.logger import Logger, LogLevel
 
 def notify_send(
     logging:Logger,

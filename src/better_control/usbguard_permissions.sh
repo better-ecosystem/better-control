@@ -1,15 +1,11 @@
 #!/usr/bin/env sh
-############################# 
-# This script is run when user presses "give permission" button on usbguard tab
-#############################
+# This script is run when user presses "give permission" button on the usbguard tab
 
-# USBGuard Permission Setup Script (Improved)
 set -eu
 
 echo "=== USBGuard Permission Setup ==="
 echo "This will configure your system to allow USBGuard access."
 
-# Verify root
 if [ "$(id -u)" -ne 0 ]; then
     echo "Please run this script with sudo or as root."
     exit 1

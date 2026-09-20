@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 import re
 import time
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 
 def get_volume(logging: Logger) -> int:

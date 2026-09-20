@@ -2,14 +2,14 @@
 
 import gi
 
-from better_control.utils.translations import English, Spanish  # type: ignore
+from better_control.translations import English, Spanish  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import os
 import threading
 from datetime import datetime
 from gi.repository import Gtk, GLib,Gdk  # type: ignore
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 
 class BatteryTab(Gtk.Box):

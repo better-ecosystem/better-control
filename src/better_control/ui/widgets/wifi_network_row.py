@@ -2,7 +2,7 @@
 
 import subprocess
 import gi  # type: ignore
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 from pathlib import Path
 from better_control.tools.wifi import generate_wifi_qrcode, get_connection_info
 

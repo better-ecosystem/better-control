@@ -4,10 +4,10 @@ import traceback
 import gi # type: ignore
 import threading
 import requests
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 import subprocess
 
-from better_control.utils.translations import Translation
+from better_control.translations import Translation
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore

@@ -5,7 +5,7 @@ import gi
 
 from better_control.tools.bluetooth import get_bluetooth_manager
 from better_control.tools.wifi import wifi_supported
-from better_control.utils.logger import LogLevel
+from better_control.logger import LogLevel
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk # type: ignore
 

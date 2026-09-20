@@ -1,7 +1,7 @@
 import subprocess
 import gi
 
-from better_control.utils.logger import LogLevel, Logger  # type: ignore
+from better_control.logger import LogLevel, Logger  # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore

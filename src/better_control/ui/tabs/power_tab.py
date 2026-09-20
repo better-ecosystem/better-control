@@ -2,13 +2,13 @@
 
 import gi # type: ignore
 
-from better_control.utils.translations import Translation  # type: ignore
+from better_control.translations import Translation  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import json
 import os
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""

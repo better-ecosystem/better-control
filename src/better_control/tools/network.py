@@ -3,7 +3,7 @@
 import subprocess
 from typing import Tuple, List
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 
 def get_network_speed(logging: Logger) -> Tuple[float, float]:

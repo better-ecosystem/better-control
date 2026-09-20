@@ -17,6 +17,7 @@ dependencies = [
     "pygobject-stubs>=2.17.0",
     "qrcode>=8.2",
     "requests>=2.34.2",
+    "result>=0.17.0",
     "setproctitle>=1.3.7",
 ]
 

@@ -25,10 +25,10 @@ from better_control.ui.tabs.volume_tab import VolumeTab
 from better_control.ui.tabs.wifi_tab import WiFiTab
 from better_control.ui.tabs.settings_tab import SettingsTab
 from better_control.ui.tabs.usbguard_tab import USBGuardTab
-from better_control.utils.settings import Config
-from better_control.utils.logger import LogLevel, Logger
+from better_control.config import Config
+from better_control.logger import LogLevel, Logger
 from better_control.ui.css.animations import load_animations_css  # animate_widget_show not used
-from better_control.utils.translations import Translation, get_translations
+from better_control.translations import Translation, get_translations
 from better_control.tools.globals import check_hardware_support
 
 

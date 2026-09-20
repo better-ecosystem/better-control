@@ -1,4 +1,5 @@
 import importlib.metadata
+import logging
 import os
 import subprocess
 import sys
@@ -9,21 +10,21 @@ import argparse
 import gi  # type: ignore
 from setproctitle import setproctitle
 
-from better_control.utils.logger import LogLevel, Logger
-from better_control.utils.settings import Config
-from better_control.utils import translations
+from better_control.cache import Cache
+from better_control.config import Config
+from better_control import translations
+from better_control.dependencies import DependencyChecker
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
 
 from better_control.ui.main_window import BetterControl
-from better_control.utils.dependencies import check_all_dependencies
 from better_control.tools.bluetooth import restore_last_sink
 from better_control.ui.css.animations import load_animations_css
 
 
-def process_language(args: argparse.Namespace, logger: Logger, config: Config):
+def process_language(args: argparse.Namespace, logger: logging.Logger, config: Config):
     settings = config.load()
     available_languages = ["en", "es", "pt", "fr", "id", "it", "tr", "de", "ru"]
 
@@ -33,29 +34,69 @@ def process_language(args: argparse.Namespace, logger: Logger, config: Config):
             print(f"\033[1;31mError: Invalid language code '{lang}'\033[0m")
             print("Falling back to English (en)")
             print(f"Available languages: {', '.join(available_languages)}")
-            logger.log(
-                LogLevel.Warn,
+            logger.warning(
                 f"Invalid language code '{lang}'. Falling back to default(en)",
             )
             lang = "en"
         settings["language"] = lang
 
         config.save()
-        logger.log(LogLevel.Info, f"Language set to: {lang}")
+        logger.info(f"Language set to: {lang}")
     else:
         lang = settings.get("language", "default")
         if lang not in (available_languages + ["default"]):
             lang = "en"
             settings["language"] = lang
             config.save()
-            logger.log(
-                LogLevel.Warn,
+            logger.warning(
                 f"Invalid language '{lang}' in settings. Falling back to default(en)",
             )
 
-    logger.log(LogLevel.Info, f"Loaded language setting from settings: {lang}")
+    logger.info(f"Loaded language setting from settings: {lang}")
     trans = translations.get_translations(logger, lang)
     return trans
+
+
+def add_logger_arguments(parser: argparse.ArgumentParser):
+    group = parser.add_argument_group("Logging")
+    group.add_argument(
+        "--log-level",
+        choices=["debug", "info", "warning", "error", "critical"],
+        default="info",
+        help="Set the logging threshold level (default: info)",
+    )
+    group.add_argument(
+        "--log-file",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Path to a file to log into. If omitted, logs go to stderr.",
+    )
+
+
+def get_logger(args: argparse.Namespace, name: str) -> logging.Logger:
+    level = getattr(logging, args.log_level.upper(), logging.INFO)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.handlers.clear()  # avoid duplicate handlers on repeated calls
+
+    formatter = logging.Formatter(
+        fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+    if args.log_file:
+        handler: logging.Handler = logging.FileHandler(args.log_file, encoding="utf-8")
+    else:
+        handler = logging.StreamHandler(sys.stderr)
+
+    handler.setLevel(level)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    logger.propagate = False
+    return logger
 
 
 def apply_environment_variables() -> None:
@@ -67,7 +108,7 @@ def apply_environment_variables() -> None:
     os.environ["MALLOC_PERTURB_"] = "0"
 
 
-def set_window_floating_rules(logger: Logger) -> None:
+def set_window_floating_rules(logger: logging.Logger) -> None:
     xdg = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
     sway_sock = os.environ.get("SWAYSOCK", "").lower()
 
@@ -83,7 +124,7 @@ def set_window_floating_rules(logger: Logger) -> None:
                 check=False,
             )
         except Exception as e:
-            logger.log(LogLevel.Warn, f"Failed to set hyprland window rule: {e}")
+            logger.warning(f"Failed to set hyprland window rule: {e}")
     elif "sway" in sway_sock:
         try:
             subprocess.run(
@@ -97,22 +138,22 @@ def set_window_floating_rules(logger: Logger) -> None:
                 check=False,
             )
         except Exception as e:
-            logger.log(LogLevel.Warn, f"Failed to set sway window rule: {e}")
+            logger.warning(f"Failed to set sway window rule: {e}")
 
 
 def launch_main_window(
-    args: argparse.Namespace, logger: Logger, trans: translations.Translation
+    args: argparse.Namespace, logger: logging.Logger, trans: translations.Translation
 ) -> None:
-    logger.log(LogLevel.Info, "Creating main window")
+    logger.info("Creating main window")
     win = BetterControl(trans, args, logger)
-    logger.log(LogLevel.Info, "Main window created successfully")
+    logger.info("Main window created successfully")
 
     setproctitle("better-control")
     GLib.idle_add(lambda: restore_last_sink(logger))
 
     if args.size is not None:
         if "x" not in args.size:
-            logger.log(LogLevel.Error, "Invalid window size")
+            logger.error("Invalid window size")
             sys.exit(1)
         width_str, height_str = args.size.split("x", 1)
     else:
@@ -131,22 +172,20 @@ def launch_main_window(
     def load_animations_async():
         try:
             load_animations_css()
-            logger.log(LogLevel.Info, "Loaded animations CSS asynchronously")
+            logger.info("Loaded animations CSS asynchronously")
         except Exception as e:
-            logger.log(
-                LogLevel.Warn, f"Failed to load animations CSS asynchronously: {e}"
-            )
+            logger.warning(f"Failed to load animations CSS asynchronously: {e}")
 
     threading.Thread(target=load_animations_async, daemon=True).start()
 
     try:
         Gtk.main()
     except KeyboardInterrupt:
-        logger.log(LogLevel.Info, "Keyboard interrupt detected, exiting...")
+        logger.info("Keyboard interrupt detected, exiting...")
         Gtk.main_quit()
         sys.exit(0)
     except Exception as e:
-        logger.log(LogLevel.Error, f"Error in GTK main loop: {e}")
+        logger.error(f"Error in GTK main loop: {e}")
         sys.exit(1)
 
 
@@ -177,38 +216,46 @@ def main() -> None:
         "-L", "--lang", default=None, help="Language code (e.g. en, es, fr)"
     )
 
+    add_logger_arguments(parser)
     Config.add_arguments(parser)
-    Logger.add_arguments(parser)
+    Cache.add_arguments(parser)
     translations.add_arguments(parser)
 
     args = parser.parse_args()
 
     if args.version:
-        print(f"{meta['Name']} {meta['Version']}")
+        print(f"{meta["Name"]} {meta["Version"]}\nCopyright (C) 2026 Better Ecosystem.")
         sys.exit(0)
 
-    logger = Logger(args)
-    logger.log(LogLevel.Info, "Starting Better Control")
+    logger = get_logger(args, meta["Name"])
+    logger.info("Starting Better Control")
     config = Config(logger, args)
+    cache = Cache(logger, args)
 
     trans = process_language(args, logger, config)
 
     def check_dependencies_async():
         try:
-            if not args.force and not check_all_dependencies(logger):
-                logger.log(
-                    LogLevel.Error,
+            if not args.force:
+                result = DependencyChecker.check_all()
+
+                if result.is_ok():
+                    return
+
+                logger.error(
                     "Missing required dependencies. Please install them and try again or use -f to force start.",
                 )
+                for dep in result.unwrap_err():
+                    logger.error(f"Missing dependency {dep.command}")
         except Exception as e:
-            logger.log(LogLevel.Error, f"Dependency check error: {e}")
+            logger.error(f"Dependency check error: {e}")
 
     threading.Thread(target=check_dependencies_async, daemon=True).start()
 
     try:
         launch_main_window(args, logger, trans)
     except Exception as e:
-        logger.log(LogLevel.Error, f"Fatal error starting application: {e}")
+        logger.error(f"Fatal error starting application: {e}")
         import traceback
 
         traceback.print_exc()

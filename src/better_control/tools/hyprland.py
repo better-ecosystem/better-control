@@ -3,7 +3,7 @@
 from pathlib import Path
 import subprocess
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 CONFIG_FILES = [
     Path.home() / ".config/hypr/hyprland.conf",

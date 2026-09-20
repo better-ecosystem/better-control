@@ -3,7 +3,7 @@
 import subprocess
 from typing import Dict, List
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 from better_control.tools.globals import get_current_session
 from better_control.tools.hyprland import get_hyprland_displays, set_hyprland_transform
 

@@ -3,13 +3,13 @@
 import threading
 import gi
 
-from better_control.utils.translations import Translation  # type: ignore
+from better_control.translations import Translation  # type: ignore
 gi.require_version('Gtk', '3.0')
 import glob
 import os
 from pathlib import Path
 from gi.repository import Gtk, GLib, Gdk, Pango # type: ignore
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 from better_control.tools.hyprland import get_hyprland_startup_apps, toggle_hyprland_startup
 from better_control.tools.globals import get_current_session
 from better_control.tools.swaywm import get_sway_startup_apps, toggle_sway_startup

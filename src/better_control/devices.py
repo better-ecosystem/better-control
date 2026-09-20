@@ -2,10 +2,10 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from logging import Logger
 
-from better_control.utils.atomic_write import atomic_write
-from better_control.utils.logger import LogLevel, Logger
-from better_control.utils.settings import Config
+from better_control import utils
+from better_control.config import Config
 
 
 class DeviceStorage:
@@ -31,20 +31,19 @@ class DeviceStorage:
                         return True
             return False
         except Exception as e:
-            self.__logger.log(LogLevel.Error, f"Error loading devices: {e}")
+            self.__logger.error(f"Error loading devices: {e}")
             return False
 
     def save(self) -> bool:
         """Save devices to file atomically"""
         try:
-            atomic_write(
+            utils.write(
                 self.storage_file,
-                lambda f: json.dump(list(self.devices), f),  # type: ignore
+                lambda f: json.dump(list(self.devices), f),
             )
             return True
         except Exception as e:
-            self.__logger.log(
-                LogLevel.Error,
+            self.__logger.error(
                 f"Error saving devices: {e}",
             )
             return False

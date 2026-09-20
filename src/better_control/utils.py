@@ -1,12 +1,12 @@
 from pathlib import Path
 import os
 import tempfile
-from typing import Callable
+from typing import Callable, TextIO
 
 
-def atomic_write(
+def write(
     path: str | Path,
-    writer: Callable[[object], None],
+    writer: Callable[[TextIO], None],
 ) -> None:
     """Write a file through a temporary file and atomically replace path."""
     path = Path(path)

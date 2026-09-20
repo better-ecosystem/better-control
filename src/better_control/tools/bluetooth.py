@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Callable
 import time  # For proper sleep handling
 import os
 
-from better_control.utils.logger import LogLevel, Logger
+from better_control.logger import LogLevel, Logger
 
 BLUEZ_SERVICE_NAME = "org.bluez"
 BLUEZ_ADAPTER_INTERFACE = "org.bluez.Adapter1"
