@@ -10,6 +10,26 @@ import os
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
 from utils.logger import LogLevel, Logger
 
+
+def _is_light_theme():
+    """True when the active GTK theme is a light one.
+
+    Power-button styling only deviates from the original design (white
+    labels) under a light theme, where white is unreadable. Dark themes
+    keep the stock look untouched.
+    """
+    try:
+        settings = Gtk.Settings.get_default()
+        if settings is None:
+            return False
+        if settings.get_property("gtk-application-prefer-dark-theme"):
+            return False
+        theme = (settings.get_property("gtk-theme-name") or "").lower()
+        return "dark" not in theme
+    except Exception:
+        return False
+
+
 class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
@@ -888,9 +908,33 @@ class PowerTab(Gtk.Box):
         icon.get_style_context().add_class("power-button-icon")
         content_box.pack_start(icon, False, False, 0)
 
-        # Create label
+        # Create label. White is unreadable under a light GTK theme, so
+        # force black label and icon there. The providers sit directly on
+        # the label/icon at USER priority: the global screen provider from
+        # _add_css() hardcodes white at APPLICATION priority and is
+        # registered after the buttons are built, so anything weaker would
+        # lose the cascade. Dark themes keep the original white look untouched.
         label = Gtk.Label(label=label_text)
         label.get_style_context().add_class("power-button-label")
+        if _is_light_theme():
+            black_label = Gtk.CssProvider()
+            black_label.load_from_data(
+                b".power-button-label { color: black; text-shadow: none; }"
+            )
+            label.get_style_context().add_provider(
+                black_label, Gtk.STYLE_PROVIDER_PRIORITY_USER
+            )
+            black_icon = Gtk.CssProvider()
+            black_icon.load_from_data(
+                b".power-button-icon { color: black; -gtk-icon-shadow: none; }"
+            )
+            icon.get_style_context().add_provider(
+                black_icon, Gtk.STYLE_PROVIDER_PRIORITY_USER
+            )
+            self._black_fg = getattr(self, "_black_fg", [])
+            # Kept alive: dropping the last reference would disconnect
+            # the providers and revert to the white fallback.
+            self._black_fg.extend([black_label, black_icon])
         content_box.pack_start(label, False, False, 0)
 
         button.add(content_box)
