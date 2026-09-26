@@ -77,6 +77,7 @@ class BetterControl(Gtk.Window):
 
         # Check if minimal mode is enabled
         self.minimal_mode = arg_parser.find_arg(("-m", "--minimal"))
+        self._had_focus = False
         if self.minimal_mode:
             self.logging.log(LogLevel.Info, "Minimal mode enabled")
 
@@ -175,6 +176,8 @@ class BetterControl(Gtk.Window):
         self.create_settings_button()
 
         self.connect("destroy", self.on_destroy)
+        self.connect("focus-in-event", self.on_focus_in)
+        self.connect("focus-out-event", self.on_focus_out)
         self.notebook.connect("switch-page", self.on_tab_switched)
         
         signal.signal(signal.SIGUSR1, self.signal_handler)
@@ -1131,6 +1134,25 @@ class BetterControl(Gtk.Window):
             self.logging.log(LogLevel.Info, "Application quitted")
             Gtk.main_quit()
         return False  # Let other handlers process the event
+
+    def on_focus_in(self, widget, event):
+        self._had_focus = True
+        return False
+
+    def on_focus_out(self, widget, event):
+        if not self._had_focus:
+            return False
+        self._had_focus = False
+        for top in Gtk.Window.list_toplevels():
+            if (
+                top is not self
+                and isinstance(top, Gtk.Dialog)
+                and top.get_transient_for() is self
+                and top.get_visible()
+            ):
+                return False
+        self.hide()
+        return False
 
     def signal_handler(self, sig, frame):
         """Handle SIGUSR1 signal - toggle window visibility on main thread"""
