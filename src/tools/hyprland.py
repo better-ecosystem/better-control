@@ -70,6 +70,41 @@ def toggle_hyprland_startup(command):
     # Reload hyprland
     subprocess.run(["hyprctl", "reload"])
     
+def set_better_control_floating_rule(logger=None):
+    """Best-effort runtime float rule for the better-control window.
+
+    Hyprland 0.55+ with the Lua config parser rejects `hyprctl keyword`
+    with "keyword can't work with non-legacy parsers. Use eval.", so fall
+    back to `hyprctl eval 'hl.window_rule(...)'` in that case.
+    Output is captured so the message never leaks onto the terminal.
+    """
+    def _log(level, msg):
+        if logger is not None:
+            try:
+                logger.log(level, msg)
+            except Exception:
+                pass
+
+    try:
+        result = subprocess.run(
+            ["hyprctl", "keyword", "windowrule", "float on,match:class ^(better-control)$"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        output = (result.stdout or "") + (result.stderr or "")
+        if "non-legacy parsers" in output:
+            _log(LogLevel.Info, "Lua Hyprland config detected, setting float rule via eval")
+            subprocess.run(
+                ["hyprctl", "eval", 'hl.window_rule({ match = { class = "better-control" }, float = true })'],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+    except Exception as e:
+        _log(LogLevel.Warn, f"Failed to set hyprland window rule: {e}")
+
+
 def get_hyprland_displays() -> dict:
     """Get current displays and their transforms from hyprctl monitors
     Returns:
@@ -163,19 +198,41 @@ def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> b
             transform = transform_map.get(orientation.lower(), 0)
 
         pos_str = f"{position['x']}x{position['y']}"
-        # hyprctl command to transform display 
+        # hyprctl command to transform display
+        # Legacy (.conf) parser syntax; Lua-parser Hyprland rejects `keyword`
+        # with "keyword can't work with non-legacy parsers", handled below.
         cmd = [
             "hyprctl",
             "keyword",
             f"monitor {display},{resolution['width']}x{resolution['height']}@{refresh},"
             f"{pos_str},{scale},transform,{transform}"
-        ]        
-        
+        ]
+
         logging.log(LogLevel.Info, f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, check=True)
-        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+        output = (result.stdout or "") + (result.stderr or "")
+        if "non-legacy parsers" in output:
+            logging.log(LogLevel.Info, "Lua Hyprland config detected, applying monitor change via eval")
+            lua_code = (
+                "hl.monitor({ "
+                f'output = "{display}", '
+                f'mode = "{resolution["width"]}x{resolution["height"]}@{refresh}", '
+                f'position = "{pos_str}", '
+                f"scale = {scale}, "
+                f"transform = {transform} "
+                "})"
+            )
+            result = subprocess.run(
+                ["hyprctl", "eval", lua_code],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            output = (result.stdout or "") + (result.stderr or "")
+
         if result.returncode != 0:
-            logging.log(LogLevel.Error, f"Command failed with: {result.stderr}")
+            logging.log(LogLevel.Error, f"Command failed with: {output.strip()}")
             return False
         return True
 

@@ -20,6 +20,7 @@ from gi.repository import Gtk, GLib  # type: ignore
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 from tools.bluetooth import restore_last_sink
+from tools.hyprland import set_better_control_floating_rule
 from ui.css.animations import load_animations_css
 
 
@@ -181,18 +182,7 @@ def launch_application(arg_parser, logger, txt):
         sway_sock = os.environ.get("SWAYSOCK", "").lower()
 
         if "hyprland" in xdg:
-            try:
-                subprocess.run(
-                    [
-                        "hyprctl",
-                        "keyword",
-                        "windowrule",
-                        "float,class:^(better_control.py)$",
-                    ],
-                    check=False,
-                )
-            except Exception as e:
-                logger.log(LogLevel.Warn, f"Failed to set hyprland window rule: {e}")
+            set_better_control_floating_rule(logger)
         elif "sway" in sway_sock:
             try:
                 subprocess.run(
@@ -334,20 +324,7 @@ def launch_main_window(arg_parser, logger, txt):
     sway_sock = os.environ.get("SWAYSOCK", "").lower()
 
     if "hyprland" in xdg:
-        try:
-            subprocess.run(
-                [
-                    "hyprctl",
-                    "keyword",
-                    "windowrule",
-                    "float,class:^(better_control.py)$",
-                ],
-                check=False,
-            )
-        except Exception as e:
-            logger.log(
-                LogLevel.Warn, f"Failed to set hyprland window rule: {e}"
-            )
+        set_better_control_floating_rule(logger)
     elif "sway" in sway_sock:
         try:
             subprocess.run(
@@ -380,6 +357,14 @@ def initialize_and_start():
     # Register signals again to be safe
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+
+    # GTK must be initialized before any IconTheme/Window use.
+    # (main() does this via Gtk.init_check; this entry point did not,
+    # so fresh launches crashed in BetterControl icon preloading.)
+    Gtk.init_check()
+    if not Gtk.init_check()[0]:
+        sys.stderr.write("Failed to initialize GTK\n")
+        sys.exit(1)
 
     apply_environment_variables()
 
